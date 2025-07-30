@@ -52,16 +52,56 @@ A modern full-stack Wordle game implementation with React frontend and FastAPI b
 
 ## Running the Game
 
-### Quick Start (Recommended)
+### 🐳 Docker (Recommended)
+
+#### Quick Start with Docker
+```bash
+# Start the entire application
+start_docker.bat
+
+# Or manually with docker-compose
+docker-compose up --build
+```
+
+**Ports:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+
+#### Development with Docker
+```bash
+# For development with hot reload
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+#### Docker Commands
+```bash
+# Stop containers
+stop_docker.bat
+# OR
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild containers
+docker-compose up --build
+
+# Remove everything (including database)
+docker-compose down -v
+```
+
+### Manual Setup (Alternative)
+
+#### Quick Start (Recommended)
 ```bash
 # Start both backend and frontend automatically
 start_wordle_game.bat
 ```
 This will launch both servers and open the game in your browser.
 
-### Manual Startup
+#### Manual Startup
 
-#### Backend Server
+##### Backend Server
 ```bash
 cd backend
 python main.py
@@ -70,7 +110,7 @@ start_backend.bat
 ```
 Server runs on http://localhost:8000
 
-#### Frontend Server
+##### Frontend Server
 ```bash
 cd frontend
 npm install  # First time only
@@ -169,7 +209,9 @@ The game features a sophisticated NLTK-powered word validation system:
 - **Frontend**: React with modern CSS animations
 - **Word Processing**: NLTK corpus with SSL certificate handling
 - **Validation**: Cached word sets for optimal performance
-- **Deployment**: Batch file automation for easy startup
+- **Containerization**: Docker with multi-stage builds and nginx proxy
+- **Deployment**: Docker Compose orchestration with volume persistence
+- **Development**: Hot reload support with development containers
 
 ### Performance Optimizations
 - Word lists generated once at server startup

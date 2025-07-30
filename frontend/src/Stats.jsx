@@ -1,11 +1,47 @@
 import React, { useState, useEffect } from "react";
 import "./Stats.css";
+import { API_BASE_URL } from "./config";
 
-function Stats({ isOpen, onClose }) {
+function Stats({ isOpen, onClose, onConnectionError }) {
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+
+  // API call wrapper with connection error handling
+  const apiCall = async (endpoint, options = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      const url = `${API_BASE_URL}${endpoint}`;
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
+      
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Check for connection errors
+      if (error.name === 'AbortError' || error.message === 'Failed to fetch' || error.message === 'Server error') {
+        if (onConnectionError) {
+          onConnectionError();
+        }
+        throw new Error('Connection error');
+      }
+      
+      throw error;
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -16,21 +52,23 @@ function Stats({ isOpen, onClose }) {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("http://localhost:8000/stats");
-      const data = await response.json();
+      const data = await apiCall('/stats');
       setStats(data);
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      if (error.message !== 'Connection error') {
+        console.error("Error fetching stats:", error);
+      }
     }
   };
 
   const fetchHistory = async () => {
     try {
-      const response = await fetch("http://localhost:8000/history");
-      const data = await response.json();
+      const data = await apiCall('/history');
       setHistory(data.games);
     } catch (error) {
-      console.error("Error fetching history:", error);
+      if (error.message !== 'Connection error') {
+        console.error("Error fetching history:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -39,11 +77,13 @@ function Stats({ isOpen, onClose }) {
   const resetStats = async () => {
     if (window.confirm("Are you sure you want to reset all statistics? This cannot be undone.")) {
       try {
-        await fetch("http://localhost:8000/reset-stats", { method: "POST" });
+        await apiCall('/reset-stats', { method: "POST" });
         fetchStats();
         fetchHistory();
       } catch (error) {
-        console.error("Error resetting stats:", error);
+        if (error.message !== 'Connection error') {
+          console.error("Error resetting stats:", error);
+        }
       }
     }
   };

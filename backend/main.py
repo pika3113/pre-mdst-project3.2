@@ -1,13 +1,16 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import random
 import string
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 import os
 import nltk
+from auth import AuthManager
+from auth_models import UserCreate, UserLogin, UserResponse, Token, GoogleAuthRequest, GoogleAuthResponse
+from google_auth import GoogleOAuthService
 from nltk.corpus import words
 import ssl
 
@@ -31,7 +34,7 @@ app = FastAPI()
 # Allow frontend to access backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],   
@@ -103,7 +106,7 @@ difficulty_levels = {
 game_sessions = {}
 
 # Database setup
-DATABASE_PATH = "wordle_stats.db"
+DATABASE_PATH = os.getenv("DATABASE_PATH", "wordle_stats.db")
 
 def init_database():
     """Initialize SQLite database with required tables"""
@@ -143,6 +146,12 @@ def init_database():
 
 # Initialize database on startup
 init_database()
+
+# Initialize authentication manager
+auth_manager = AuthManager(DATABASE_PATH)
+
+# Initialize Google OAuth service
+google_oauth = GoogleOAuthService()
 
 class GuessRequest(BaseModel):
     guess: str
@@ -186,7 +195,7 @@ def get_cell_color(guess, chosen_word):
     return output, is_win
 
 def save_game_to_db(word: str, difficulty: str, guesses: int, won: bool, session_id: str):
-    """Save completed game to database"""
+    # Save completed game to database
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
@@ -387,6 +396,24 @@ async def get_history():
     conn.close()
     return {"games": games}
 
+@app.get("/leaderboard")
+async def get_leaderboard():
+    """Get leaderboard with top players"""
+    # Mock leaderboard data for now
+    mock_leaderboard = [
+        {"rank": 1, "name": "WordMaster2024", "wins": 156, "winRate": 89, "gamesPlayed": 175},
+        {"rank": 2, "name": "GuessGenius", "wins": 142, "winRate": 85, "gamesPlayed": 167},
+        {"rank": 3, "name": "LetterLegend", "wins": 138, "winRate": 82, "gamesPlayed": 168},
+        {"rank": 4, "name": "WordWizard", "wins": 128, "winRate": 76, "gamesPlayed": 168},
+        {"rank": 5, "name": "PuzzlePro", "wins": 124, "winRate": 78, "gamesPlayed": 159},
+        {"rank": 6, "name": "VocabViper", "wins": 119, "winRate": 74, "gamesPlayed": 161},
+        {"rank": 7, "name": "LetterLord", "wins": 115, "winRate": 73, "gamesPlayed": 158},
+        {"rank": 8, "name": "WordWarrior", "wins": 112, "winRate": 72, "gamesPlayed": 156},
+        {"rank": 9, "name": "GuessGuru", "wins": 108, "winRate": 71, "gamesPlayed": 152},
+        {"rank": 10, "name": "PuzzlePilot", "wins": 105, "winRate": 70, "gamesPlayed": 150}
+    ]
+    return {"leaderboard": mock_leaderboard}
+
 @app.post("/reset-stats")
 async def reset_stats():
     """Reset all game statistics"""
@@ -415,6 +442,104 @@ async def validate_word(data: GuessRequest):
         "valid": is_valid, 
         "message": "Valid word" if is_valid else f"'{word}' is not a valid word"
     }
+
+# Authentication endpoints
+@app.post("/register", response_model=Token)
+async def register(user_data: UserCreate):
+    """Register a new user"""
+    try:
+        # Create user
+        user = auth_manager.create_user(
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password
+        )
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=30)
+        access_token = auth_manager.create_access_token(
+            data={"sub": user["username"]}, 
+            expires_delta=access_token_expires
+        )
+        
+        # Return token and user info
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse(**user)
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user"
+        )
+
+@app.post("/login", response_model=Token)
+async def login(user_data: UserLogin):
+    """Login user and return access token"""
+    user = auth_manager.authenticate_user(user_data.username, user_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token_expires = timedelta(minutes=30)
+    access_token = auth_manager.create_access_token(
+        data={"sub": user["username"]}, 
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse(**user)
+    }
+
+@app.get("/me", response_model=UserResponse)
+async def get_current_user(current_user: dict = Depends(auth_manager.get_current_user)):
+    """Get current user information"""
+    return UserResponse(**current_user)
+
+# Google OAuth endpoints
+@app.get("/auth/google", response_model=GoogleAuthResponse)
+async def google_auth():
+    """Get Google OAuth authorization URL"""
+    auth_url = google_oauth.get_authorization_url()
+    return {"auth_url": auth_url}
+
+@app.post("/auth/google/callback", response_model=Token)
+async def google_auth_callback(auth_request: GoogleAuthRequest):
+    """Handle Google OAuth callback"""
+    try:
+        # Process Google OAuth
+        google_user_info = google_oauth.process_google_auth(auth_request.code)
+        
+        # Create or update user
+        user = auth_manager.create_or_update_google_user(google_user_info)
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=30)
+        access_token = auth_manager.create_access_token(
+            data={"sub": user["username"]}, 
+            expires_delta=access_token_expires
+        )
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse(**user)
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google authentication failed: {str(e)}"
+        )
 
 @app.get("/")
 async def root():

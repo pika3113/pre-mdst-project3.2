@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import "./App.css";
 import LandingPage from "./LandingPage";
 import MenuScreen from "./MenuScreen";
@@ -8,12 +7,10 @@ import PracticeGame from "./PracticeGame";
 import MultiplayerGame from "./MultiplayerGame";
 import GoogleCallback from "./GoogleCallback";
 
-// Component to handle authentication logic
-function AuthenticatedApp() {
+function App() {
+  const [currentScreen, setCurrentScreen] = useState('landing'); // landing, menu, stats, practice, multiplayer
   const [user, setUser] = useState(null);
   const [isGoogleCallback, setIsGoogleCallback] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // Check for Google OAuth callback
   useEffect(() => {
@@ -28,12 +25,13 @@ function AuthenticatedApp() {
     });
     
     // Only set callback flag if we have a code and are on the callback path
+    // This prevents the callback from triggering on other pages with code params
     if (code && (currentPath === '/auth/google/callback' || 
                  (currentPath === '/' && window.location.search.includes('code=')))) {
       console.log('App.jsx - Setting isGoogleCallback to true');
       setIsGoogleCallback(true);
     }
-  }, [location]);
+  }, []);
 
   // Check for existing authentication on mount
   useEffect(() => {
@@ -44,6 +42,7 @@ function AuthenticatedApp() {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
+        setCurrentScreen('menu');
       } catch (error) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
@@ -54,8 +53,8 @@ function AuthenticatedApp() {
   // Authentication handlers
   const handleAuthSuccess = (userData) => {
     setUser(userData);
+    setCurrentScreen('menu');
     setIsGoogleCallback(false);
-    navigate('/menu');
     // Clear URL parameters after successful Google auth
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -65,7 +64,6 @@ function AuthenticatedApp() {
   const handleAuthError = (error) => {
     setIsGoogleCallback(false);
     console.error('Auth error:', error);
-    navigate('/');
     // Clear URL parameters after failed Google auth
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -76,7 +74,11 @@ function AuthenticatedApp() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     setUser(null);
-    navigate('/');
+    setCurrentScreen('landing');
+  };
+
+  const handleNavigate = (screen) => {
+    setCurrentScreen(screen);
   };
 
   // Handle Google OAuth callback
@@ -89,35 +91,56 @@ function AuthenticatedApp() {
     );
   }
 
-  // Routes for authenticated users
-  if (user) {
+  // Main app routing
+  if (!user) {
     return (
-      <Routes>
-        <Route path="/" element={<Navigate to="/menu" replace />} />
-        <Route path="/menu" element={<MenuScreen user={user} onLogout={handleLogout} />} />
-        <Route path="/stats" element={<StatsScreen user={user} />} />
-        <Route path="/practice" element={<PracticeGame user={user} />} />
-        <Route path="/multiplayer" element={<MultiplayerGame user={user} />} />
-        <Route path="*" element={<Navigate to="/menu" replace />} />
-      </Routes>
+      <LandingPage onAuthSuccess={handleAuthSuccess} />
     );
   }
 
-  // Routes for unauthenticated users
-  return (
-    <Routes>
-      <Route path="/" element={<LandingPage onAuthSuccess={handleAuthSuccess} />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
-
-function App() {
-  return (
-    <Router>
-      <AuthenticatedApp />
-    </Router>
-  );
+  switch (currentScreen) {
+    case 'menu':
+      return (
+        <MenuScreen 
+          user={user}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+        />
+      );
+    
+    case 'stats':
+      return (
+        <StatsScreen 
+          user={user}
+          onNavigate={handleNavigate}
+        />
+      );
+    
+    case 'practice':
+      return (
+        <PracticeGame 
+          user={user}
+          onNavigate={handleNavigate}
+        />
+      );
+    
+    case 'multiplayer':
+      return (
+        <MultiplayerGame 
+          user={user}
+          onNavigate={handleNavigate}
+        />
+      );
+    
+    default:
+      return (
+        <MenuScreen 
+          user={user}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+        />
+      );
+  }
 }
 
 export default App;
