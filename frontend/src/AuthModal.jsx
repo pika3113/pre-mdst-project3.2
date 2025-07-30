@@ -42,6 +42,9 @@ function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             password: formData.password 
           };
 
+      console.log('API URL:', `${API_BASE_URL}${endpoint}`);
+      console.log('Payload:', payload);
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
