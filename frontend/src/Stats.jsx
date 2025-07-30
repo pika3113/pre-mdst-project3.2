@@ -52,7 +52,7 @@ function Stats({ isOpen, onClose }) {
 
   if (loading) {
     return (
-      <div className="stats-overlay">
+      <div className={`stats-overlay ${isOpen ? 'open' : ''}`}>
         <div className="stats-modal">
           <div className="loading">Loading statistics...</div>
         </div>
@@ -61,7 +61,7 @@ function Stats({ isOpen, onClose }) {
   }
 
   return (
-    <div className="stats-overlay">
+    <div className={`stats-overlay ${isOpen ? 'open' : ''}`}>
       <div className="stats-modal">
         <div className="stats-header">
           <h2>Statistics</h2>

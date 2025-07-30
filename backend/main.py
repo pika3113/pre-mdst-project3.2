@@ -7,6 +7,24 @@ import sqlite3
 from datetime import datetime
 from typing import Optional
 import os
+import nltk
+from nltk.corpus import words
+import ssl
+
+# Download NLTK data if not already present
+try:
+    # Try to create unverified HTTPS context for NLTK downloads
+    try:
+        _create_unverified_https_context = ssl._create_unverified_context
+    except AttributeError:
+        pass
+    else:
+        ssl._create_default_https_context = _create_unverified_https_context
+    
+    # Download words corpus if not present
+    nltk.data.find('corpora/words')
+except LookupError:
+    nltk.download('words', quiet=True)
 
 app = FastAPI()
 
@@ -19,24 +37,61 @@ app.add_middleware(
     allow_headers=["*"],   
 )
 
-# Simple word lists for testing
-WORD_LISTS = {
-    4: ["WORD", "TEST", "GAME", "PLAY", "TIME", "GOOD", "NICE", "COOL", "FAST", "SLOW", "WORK", "HOME", "LOVE", "HOPE", "LIFE", "MAKE", "TAKE", "COME", "SOME", "HELP", "CALL", "WELL", "TELL", "FEEL", "KEEP", "LOOK", "PART", "WANT", "YEAR", "HAND"],
-    5: ["HELLO", "WORLD", "PYTHON", "GAMES", "WORDS", "QUICK", "BROWN", "JUMPS", "FOXES", "TESTS", "MAGIC", "SPACE", "TIGER", "OCEAN", "LIGHT", "HOUSE", "MONEY", "HEART", "NIGHT", "SOUND", "WATER", "PLACE", "RIGHT", "THINK", "POINT", "MUSIC", "YOUNG", "ABOVE", "AGAIN", "STORY"],
-    6: ["PYTHON", "CODING", "SIMPLE", "WORDLE", "LETTERS", "RANDOM", "CUSTOM", "FIXING", "ISSUES", "SOLVED", "ANIMAL", "BRIDGE", "CASTLE", "DRAGON", "FLOWER", "GARDEN", "FRIEND", "MARKET", "HEALTH", "FAMILY", "SOCIAL", "SCHOOL", "STRONG", "SYSTEM", "FATHER", "MOTHER", "TRAVEL", "MODERN", "FOREST", "CIRCLE"]
-}
+# Generate word lists dynamically from NLTK corpus
+def generate_word_lists():
+    """Generate word lists for each difficulty level from NLTK corpus"""
+    try:
+        # Get all English words from NLTK
+        english_words = set(word.upper() for word in words.words() if word.isalpha())
+        
+        # Filter words by length
+        word_lists = {4: [], 5: [], 6: []}
+        
+        for word in english_words:
+            word_len = len(word)
+            if word_len in [4, 5, 6]:
+                # Just filter by length, no additional restrictions for more variety
+                word_lists[word_len].append(word)
+        
+        # Limit to reasonable sizes and sort for consistency
+        for length in word_lists:
+            word_lists[length] = sorted(word_lists[length])[:3000]  # Increased to 3000 words per difficulty
+            
+        return word_lists
+    except Exception as e:
+        print(f"Error generating word lists from NLTK: {e}")
+        # Fallback to basic word lists if NLTK fails
+        return {
+            4: ["WORD", "GAME", "PLAY", "BEST", "LOVE", "LIFE", "TIME", "GOOD", "MAKE", "WORK", "HELL", "BALL", "CALL", "FALL"],
+            5: ["WORDS", "GAMES", "PLAYS", "LOVED", "LIVES", "TIMES", "GOODS", "MAKES", "WORKS", "STUDY", "HELLO", "BALLS", "CALLS", "FALLS"],
+            6: ["WORDLE", "GAMING", "PLAYER", "LOVING", "LIVING", "TIMING", "MAKING", "WORKED", "STUDIED", "BETTER", "HELLOS", "CALLED", "FALLEN", "BALLED"]
+        }
 
-# All valid words for validation (includes both target words and valid guesses)
-ALL_VALID_WORDS = {
-    4: WORD_LISTS[4] + ["ABLE", "ALSO", "BACK", "BEEN", "BEST", "BOOK", "BOTH", "CAME", "CITY", "DATA", "DOES", "DOWN", "EACH", "EVEN", "FACE", "FACT", "FIND", "FIRE", "GIVE", "GOES", "HARD", "HEAD", "HIGH", "HOLD", "HUGE", "IDEA", "INTO", "JUST", "KIND", "KNOW", "LAND", "LAST", "LEFT", "LIVE", "LONG", "MANY", "MOST", "MOVE", "MUST", "NAME", "NEED", "NEWS", "NEXT", "ONCE", "ONLY", "OPEN", "OVER", "PAID", "PATH", "PLAN", "PLUS", "REAL", "ROOM", "SAID", "SAME", "SEEM", "SHOW", "SIDE", "SIZE", "SORT", "SUCH", "SURE", "THAN", "THAT", "THEM", "THEY", "THIS", "THUS", "TOWN", "TRUE", "TURN", "USED", "USER", "VERY", "WALK", "WALL", "WAYS", "WEEK", "WENT", "WERE", "WHAT", "WHEN", "WILL", "WITH", "WORD", "WORK", "YOUR"],
-    5: WORD_LISTS[5] + ["ABOUT", "ABOVE", "ABUSE", "ACTOR", "ACUTE", "ADMIT", "ADOPT", "ADULT", "AFTER", "AGENT", "AGREE", "AHEAD", "ALARM", "ALBUM", "ALERT", "ALIEN", "ALIGN", "ALIKE", "ALIVE", "ALLOW", "ALONE", "ALONG", "ALTER", "AMONG", "ANGER", "ANGLE", "ANGRY", "APART", "APPLE", "APPLY", "ARENA", "ARGUE", "ARISE", "ARRAY", "ARROW", "ASIDE", "ASSET", "AVOID", "AWAKE", "AWARD", "AWARE", "BADLY", "BAKER", "BASIC", "BEACH", "BEGAN", "BEGIN", "BEING", "BELOW", "BENCH", "BILLY", "BIRTH", "BLACK", "BLAME", "BLANK", "BLIND", "BLOCK", "BLOOD", "BOARD", "BOOST", "BOOTH", "BOUND", "BRAIN", "BRAND", "BRAVE", "BREAD", "BREAK", "BREED", "BRIEF", "BRING", "BROAD", "BROKE", "BROWN", "BUILD", "BUILT", "BUYER", "CABLE", "CANCER", "CARRY", "CATCH", "CAUSE", "CHAIN", "CHAIR", "CHAOS", "CHARM", "CHART", "CHASE", "CHEAP", "CHECK", "CHEST", "CHILD", "CHINA", "CHOSE", "CIVIL", "CLAIM", "CLASS", "CLEAN", "CLEAR", "CLICK", "CLIMB", "CLOCK", "CLOSE", "CLOUD", "COACH", "COAST", "COULD", "COUNT", "COURT", "COVER", "CRAFT", "CRASH", "CRAZY", "CREAM", "CRIME", "CROSS", "CROWD", "CROWN", "CRUDE", "CURVE", "CYCLE", "DAILY", "DANCE", "DATED", "DEALT", "DEATH", "DEBUT", "DELAY", "DEPTH", "DOING", "DOUBT", "DOZEN", "DRAFT", "DRAMA", "DRANK", "DREAM", "DRESS", "DRILL", "DRINK", "DRIVE", "DROVE", "DYING", "EAGER", "EARLY", "EARTH", "EIGHT", "ELITE", "EMPTY", "ENEMY", "ENJOY", "ENTER", "ENTRY", "EQUAL", "ERROR", "EVENT", "EVERY", "EXACT", "EXIST", "EXTRA", "FAITH", "FALSE", "FAULT", "FIBER", "FIELD", "FIFTH", "FIFTY", "FIGHT", "FINAL", "FIRST", "FIXED", "FLASH", "FLEET", "FLOOR", "FLUID", "FOCUS", "FORCE", "FORTH", "FORTY", "FORUM", "FOUND", "FRAME", "FRANK", "FRAUD", "FRESH", "FRONT", "FRUIT", "FULLY", "FUNNY", "GIANT", "GIVEN", "GLASS", "GLOBE", "GOING", "GRACE", "GRADE", "GRAND", "GRANT", "GRASS", "GRAVE", "GREAT", "GREEN", "GROSS", "GROUP", "GROWN", "GUARD", "GUESS", "GUEST", "GUIDE", "HAPPY", "HARRY", "HEART", "HEAVY", "HENCE", "HENRY", "HORSE", "HOTEL", "HOUSE", "HUMAN", "IDEAL", "IMAGE", "INDEX", "INNER", "INPUT", "ISSUE", "JAPAN", "JIMMY", "JOINT", "JONES", "JUDGE", "KNOWN", "LABEL", "LARGE", "LASER", "LATER", "LAUGH", "LAYER", "LEARN", "LEASE", "LEAST", "LEAVE", "LEGAL", "LEVEL", "LEWIS", "LIGHT", "LIMIT", "LINKS", "LIVES", "LOCAL", "LOGIC", "LOOSE", "LOWER", "LUCKY", "LUNCH", "LYING", "MAGIC", "MAJOR", "MAKER", "MARCH", "MARIA", "MATCH", "MAYBE", "MAYOR", "MEANT", "MEDIA", "METAL", "MIGHT", "MINOR", "MINUS", "MIXED", "MODEL", "MONEY", "MONTH", "MORAL", "MOTOR", "MOUNT", "MOUSE", "MOUTH", "MOVED", "MOVIE", "MUSIC", "NEEDS", "NEVER", "NEWLY", "NIGHT", "NOISE", "NORTH", "NOTED", "NOVEL", "NURSE", "OCCUR", "OCEAN", "OFFER", "OFTEN", "ORDER", "OTHER", "OUGHT", "PAINT", "PANEL", "PAPER", "PARTY", "PEACE", "PETER", "PHASE", "PHONE", "PHOTO", "PIANO", "PIECE", "PILOT", "PITCH", "PLACE", "PLAIN", "PLANE", "PLANT", "PLATE", "POINT", "POUND", "POWER", "PRESS", "PRICE", "PRIDE", "PRIME", "PRINT", "PRIOR", "PRIZE", "PROOF", "PROUD", "PROVE", "QUEEN", "QUICK", "QUIET", "QUITE", "RADIO", "RAISE", "RANGE", "RAPID", "RATIO", "REACH", "READY", "REALM", "REBEL", "REFER", "RELAX", "RIDER", "RIDGE", "RIGHT", "RIGID", "RIVER", "ROBOT", "ROGER", "ROMAN", "ROUGH", "ROUND", "ROUTE", "ROYAL", "RURAL", "SCALE", "SCENE", "SCOPE", "SCORE", "SENSE", "SERVE", "SEVEN", "SHALL", "SHAPE", "SHARE", "SHARP", "SHEET", "SHELF", "SHELL", "SHIFT", "SHINE", "SHIRT", "SHOCK", "SHOOT", "SHORT", "SHOWN", "SIGHT", "SILLY", "SINCE", "SIXTH", "SIXTY", "SIZED", "SKILL", "SLEEP", "SLIDE", "SMALL", "SMART", "SMILE", "SMITH", "SMOKE", "SNAKE", "SNOW", "SOLID", "SOLVE", "SORRY", "SORT", "SOULS", "SOUND", "SOUTH", "SPACE", "SPARE", "SPEAK", "SPEED", "SPEND", "SPENT", "SPLIT", "SPOKE", "SPORT", "SQUAD", "STAFF", "STAGE", "STAKE", "STAND", "START", "STATE", "STEAM", "STEEL", "STEEP", "STEER", "STERN", "STICK", "STILL", "STOCK", "STONE", "STOOD", "STORE", "STORM", "STORY", "STRIP", "STUCK", "STUDY", "STUFF", "STYLE", "SUGAR", "SUITE", "SUPER", "SWEET", "TABLE", "TAKEN", "TASTE", "TAXES", "TEACH", "TEETH", "TERRY", "TEXAS", "THANK", "THEFT", "THEIR", "THEME", "THERE", "THESE", "THICK", "THING", "THINK", "THIRD", "THOSE", "THREE", "THREW", "THROW", "THUMB", "TIGHT", "TIRED", "TITLE", "TODAY", "TOPIC", "TOTAL", "TOUCH", "TOUGH", "TOWEL", "TOWER", "TRACK", "TRADE", "TRAIN", "TREAT", "TREND", "TRIAL", "TRIBE", "TRICK", "TRIED", "TRIES", "TRUCK", "TRULY", "TRUNK", "TRUST", "TRUTH", "TWICE", "UNCLE", "UNDER", "UNDUE", "UNION", "UNITY", "UNTIL", "UPPER", "UPSET", "URBAN", "USAGE", "USUAL", "VALID", "VALUE", "VIDEO", "VIRUS", "VISIT", "VITAL", "VOCAL", "VOICE", "WASTE", "WATCH", "WATER", "WHEEL", "WHERE", "WHICH", "WHILE", "WHITE", "WHOLE", "WHOSE", "WOMAN", "WOMEN", "WORLD", "WORRY", "WORSE", "WORST", "WORTH", "WOULD", "WRITE", "WRONG", "WROTE", "YOUNG", "YOURS", "YOUTH"],
-    6: WORD_LISTS[6] + ["ACCEPT", "ACCESS", "ACROSS", "ACTION", "ACTIVE", "ACTUAL", "ADVICE", "AFFECT", "AFFORD", "AFRAID", "AGENCY", "AGENDA", "ALMOST", "ALWAYS", "AMOUNT", "ANIMAL", "ANNUAL", "ANSWER", "ANYONE", "ANYWAY", "APPEAR", "AROUND", "ARRIVE", "ARTIST", "ASPECT", "ASSESS", "ASSIST", "ASSUME", "ATTACK", "ATTEND", "AUGUST", "AUTHOR", "AVENUE", "BACKED", "BACKUP", "BARELY", "BARREL", "BATTLE", "BEAUTY", "BECAME", "BECOME", "BEFORE", "BEHALF", "BEHAVE", "BEHIND", "BELIEF", "BELONG", "BERLIN", "BETTER", "BEYOND", "BISHOP", "BORDER", "BOTTLE", "BOTTOM", "BOUGHT", "BRANCH", "BREATH", "BRIDGE", "BRIEF", "BRIGHT", "BRING", "BRITAIN", "BROKEN", "BUDGET", "BUNDLE", "BURDEN", "BUREAU", "BUTTON", "CAMERA", "CANCER", "CANNOT", "CARBON", "CAREER", "CASTLE", "CASUAL", "CAUGHT", "CENTER", "CENTRE", "CHANCE", "CHANGE", "CHARGE", "CHOICE", "CHOOSE", "CHOSEN", "CHURCH", "CIRCLE", "CLIENT", "CLOSED", "CLOSER", "COFFEE", "COLUMN", "COMBAT", "COMING", "COMMIT", "COMMON", "COMPLY", "COPPER", "CORNER", "CORPORATE", "COTTON", "COUNTY", "COUPLE", "COURSE", "COVERS", "CREATE", "CREDIT", "CRISIS", "CUSTOM", "DAMAGE", "DANGER", "DEALER", "DEBATE", "DECADE", "DECIDE", "DEFEAT", "DEFEND", "DEFINE", "DEGREE", "DELIVER", "DEMAND", "DEPEND", "DEPUTY", "DERIVE", "DESIGN", "DESIRE", "DETAIL", "DETECT", "DEVICE", "DIFFER", "DINNER", "DIRECT", "DOCTOR", "DOUBLE", "DRIVEN", "DRIVER", "DURING", "EASILY", "EATING", "EDITOR", "EFFECT", "EFFORT", "EIGHTH", "EITHER", "ELEVEN", "EMERGE", "EMPIRE", "EMPLOY", "ENABLE", "ENDING", "ENERGY", "ENGAGE", "ENGINE", "ENOUGH", "ENSURE", "ENTIRE", "EQUITY", "ESCAPE", "ESTATE", "ETHNIC", "EUROPE", "EVEN", "EVENT", "EVERY", "EXCEED", "EXCEPT", "EXCLUDE", "EXCUSE", "EXERCISE", "EXIST", "EXPAND", "EXPECT", "EXPERT", "EXPORT", "EXTEND", "EXTENT", "FABRIC", "FACIAL", "FACTOR", "FAILED", "FAIRLY", "FALLEN", "FAMILY", "FAMOUS", "FATHER", "FELLOW", "FEMALE", "FIGURE", "FILTER", "FINGER", "FINISH", "FISCAL", "FLIGHT", "FLYING", "FOLLOW", "FOOTER", "FOREIGN", "FOREST", "FORGET", "FORMAT", "FORMER", "FOSTER", "FOUGHT", "FOURTH", "FRANCE", "FRIEND", "FUTURE", "GADGET", "GAINED", "GALAXY", "GARAGE", "GARDEN", "GATHER", "GENDER", "GENTLE", "GERMAN", "GLOBAL", "GOLDEN", "GORDON", "GOVERN", "GROWTH", "GUILTY", "HANDLE", "HAPPEN", "HEADED", "HEALTH", "HEIGHT", "HELMET", "HEREBY", "HIDDEN", "HOLDER", "HONEST", "HUMAN", "HUNGRY", "HUNTER", "HURRIED", "IGNORE", "IMMUNE", "IMPACT", "IMPORT", "IMPOSE", "INCOME", "INDEED", "INDOOR", "INFANT", "INFORM", "INITIAL", "INJURY", "INSIDE", "INTEND", "INTENT", "INVEST", "INVITE", "ISLAND", "ITSELF", "JERSEY", "JOSEPH", "JUNIOR", "KILLED", "LABOUR", "LADDER", "LADIES", "LAPTOP", "LARGELY", "LAST", "LATELY", "LATTER", "LAUNCH", "LAWYER", "LEADER", "LEAGUE", "LEARNT", "LEATHER", "LEAVE", "LENGTH", "LESSON", "LETTER", "LIABLE", "LIGHTS", "LIKELY", "LINKED", "LIQUID", "LISTEN", "LITTLE", "LIVING", "LOSING", "LOVELY", "LOSING", "MACHINE", "MAINLY", "MAKEUP", "MANAGE", "MANNER", "MANUAL", "MARBLE", "MARGIN", "MARINE", "MARKED", "MARKET", "MARRIED", "MARTIN", "MASTER", "MATTER", "MATURE", "MEDIUM", "MEMBER", "MEMORY", "MENTAL", "MERELY", "MIDDLE", "MILLER", "MINING", "MINUTE", "MIRROR", "MISSING", "MOBILE", "MODERN", "MODIFY", "MOMENT", "MONTHLY", "MOSTLY", "MOTHER", "MOTION", "MOVING", "MURDER", "MUSCLE", "MUSEUM", "MUTUAL", "MYSELF", "NAMELY", "NARROW", "NATION", "NATIVE", "NATURE", "NEARBY", "NEARLY", "NIGHTS", "NOBODY", "NORMAL", "NOTICE", "NOTION", "OBJECT", "OBTAIN", "OCCUPY", "OCEAN", "OFFICE", "ONLINE", "OPTION", "ORANGE", "ORIGIN", "OUTPUT", "OVERALL", "OXFORD", "PACKED", "PALACE", "PANEL", "PARADE", "PARISH", "PARTLY", "PASSED", "PATENT", "PATTERN", "PAYING", "PEOPLE", "PERIOD", "PERMIT", "PERSON", "PETROL", "PHRASE", "PICKED", "PIECES", "PLANET", "PLATES", "PLAYER", "PLEASE", "PLENTY", "POCKET", "POLICE", "POLICY", "POLISH", "POOR", "PORTAL", "POSTED", "POTATO", "POUND", "PRAISE", "PREFER", "PRETTY", "PREVENT", "PRIEST", "PRIMARY", "PRIME", "PRINCE", "PRISON", "PROFIT", "PROPER", "PROVEN", "PUBLIC", "PURPLE", "PUSHED", "PUTS", "PUZZLE", "QUAINT", "RABBIT", "RACING", "RADICAL", "RAISED", "RANDOM", "RARELY", "RATHER", "RATING", "READER", "REALLY", "REASON", "REBEL", "RECALL", "RECENT", "RECORD", "REDUCE", "REFORM", "REFUSE", "REGARD", "REGION", "RELATE", "RELIEF", "REMAIN", "REMOTE", "REMOVE", "REPAIR", "REPEAT", "REPLACE", "REPLY", "REPORT", "RESCUE", "RESIST", "RESORT", "RESULT", "RETAIL", "RETIRE", "RETURN", "REVEAL", "REVIEW", "REWARD", "RIDING", "RISING", "ROBUST", "ROCKET", "ROLLED", "ROMANS", "RUBBER", "RULING", "RUNNING", "SACRED", "SAFELY", "SAFETY", "SALARY", "SAMPLE", "SAVING", "SAYING", "SCALE", "SCHEME", "SCHOOL", "SCIENCE", "SCREEN", "SCRIPT", "SEARCH", "SEASON", "SECOND", "SECRET", "SECTOR", "SECURE", "SEEING", "SEEKING", "SELECT", "SENATE", "SENIOR", "SERIES", "SERIOUS", "SERVICE", "SETTLE", "SEVERE", "SEXUAL", "SHADOW", "SHARED", "SHEETS", "SHOULD", "SHOWED", "SHOWER", "SHUT", "SIGNED", "SILENT", "SILVER", "SIMPLE", "SIMPLY", "SINGLE", "SISTER", "SLIGHT", "SMOOTH", "SOCIAL", "SOCKET", "SODIUM", "SOLELY", "SOLVED", "SOUGHT", "SOURCE", "SOVIET", "SPEAKS", "SPIRIT", "SPREAD", "SPRING", "SQUARE", "STABLE", "STAGES", "STAIRS", "STANCE", "STANDS", "STATUE", "STATUS", "STAYED", "STEADY", "STOLEN", "STORAGE", "STORED", "STRAIN", "STRAND", "STREAM", "STREET", "STRESS", "STRIKE", "STRING", "STROKE", "STRONG", "STRUCK", "STUDIO", "STUPID", "SUBMIT", "SUDDEN", "SUFFER", "SUMMER", "SUMMIT", "SUPPLY", "SURELY", "SURFACE", "SURVEY", "SWITCH", "SYMBOL", "SYSTEM", "TACKLE", "TAKING", "TALENT", "TALKED", "TARGET", "TAUGHT", "TEMPLE", "TENANT", "TENDER", "TENNIS", "THANKS", "THEORY", "THIRTY", "THOUGH", "THREAD", "THREAT", "THROWN", "TICKET", "TIMBER", "TIMING", "TISSUE", "TITLES", "TOILET", "TONGUE", "TONIGHT", "TOWARD", "TRAVEL", "TREATY", "TRYING", "TUNNEL", "TURNED", "TWELVE", "TWENTY", "TYPING", "UNABLE", "UNIQUE", "UNLESS", "UNLIKE", "UPDATE", "UPLOAD", "URGENT", "USEFUL", "VALLEY", "VARIED", "VECTOR", "VENDOR", "VENUE", "VERBAL", "VERSUS", "VESSEL", "VICTIM", "VIEWER", "VIOLET", "VISUAL", "VOLUME", "WALKER", "WALKED", "WANTED", "WARMER", "WEALTH", "WEAPON", "WEEKLY", "WEIGHT", "WIDELY", "WINDOW", "WINTER", "WITHIN", "WIZARD", "WONDER", "WOODEN", "WORKED", "WORKER", "WORTHY", "WRITER", "YELLOW"]
-}
+# Generate word lists on startup
+WORD_LISTS = generate_word_lists()
+
+# Cache all valid words for efficient validation
+ALL_VALID_WORDS = {}
+try:
+    all_english_words = set(word.upper() for word in words.words() if word.isalpha())
+    for word in all_english_words:
+        word_len = len(word)
+        if word_len in [4, 5, 6]:
+            if word_len not in ALL_VALID_WORDS:
+                ALL_VALID_WORDS[word_len] = set()
+            ALL_VALID_WORDS[word_len].add(word)
+except:
+    # Fallback if NLTK fails
+    ALL_VALID_WORDS = {
+        4: set(WORD_LISTS[4]),
+        5: set(WORD_LISTS[5]),
+        6: set(WORD_LISTS[6])
+    }
 
 def is_valid_word(word: str, word_length: int) -> bool:
-    """Check if a word is valid for the given word length"""
+    """Check if a word is valid using cached word set"""
     word = word.upper()
-    return word in ALL_VALID_WORDS.get(word_length, [])
+    return word in ALL_VALID_WORDS.get(word_length, set())
 
 difficulty_levels = {
     "easy": 4,
