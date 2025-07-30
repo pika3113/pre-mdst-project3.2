@@ -1,6 +1,4 @@
 // API configuration
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api'  // Use nginx proxy in production
-  : 'http://localhost:8000';  // Direct connection in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; // Use environment variable for backend URL
 
 export { API_BASE_URL };
