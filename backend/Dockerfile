@@ -32,5 +32,5 @@ EXPOSE 8000
 ENV PYTHONPATH=/app
 ENV DATABASE_PATH=/app/data/wordle_stats.db
 
-# Run the application
+# Run the modular application
 CMD ["python", "main.py"]

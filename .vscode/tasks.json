@@ -14,6 +14,21 @@
 				"cwd": "${workspaceFolder}/backend"
 			},
 			"problemMatcher": []
+		},
+		{
+			"label": "Start Frontend Dev Server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			},
+			"problemMatcher": []
 		}
 	]
 }
