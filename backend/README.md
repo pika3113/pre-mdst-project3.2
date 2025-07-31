@@ -18,10 +18,11 @@ A FastAPI-based backend for a Wordle game with SQLite database integration.
 ## Features
 
 - **Session Management**: Persistent game sessions
-- **Word Validation**: Comprehensive word lists for 4, 5, and 6 letter words
+- **Word Validation**: NLTK Brown Corpus for high-quality, contextual English words
 - **Statistics Tracking**: Win rates, game history, and performance metrics
 - **Database Storage**: SQLite database for persistent data
 - **CORS Support**: Configured for frontend integration
+- **Natural Language Processing**: Real-world vocabulary from published texts
 
 ## Running the Server
 

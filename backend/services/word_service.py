@@ -6,7 +6,7 @@ import random
 import ssl
 from typing import Dict, List, Set
 import nltk
-from nltk.corpus import words
+from nltk.corpus import brown
 
 from core.config import DIFFICULTY_WORD_LENGTHS
 
@@ -31,16 +31,16 @@ class WordService:
             else:
                 ssl._create_default_https_context = _create_unverified_https_context
             
-            # Download words corpus if not present
-            nltk.data.find('corpora/words')
+            # Download brown corpus if not present
+            nltk.data.find('corpora/brown')
         except LookupError:
-            nltk.download('words', quiet=True)
+            nltk.download('brown', quiet=True)
     
     def _generate_word_lists(self):
-        """Generate word lists for each difficulty level from NLTK corpus"""
+        """Generate word lists for each difficulty level from NLTK Brown corpus"""
         try:
-            # Get all English words from NLTK
-            english_words = set(word.upper() for word in words.words() if word.isalpha())
+            # Get all English words from NLTK Brown corpus
+            english_words = set(word.upper() for word in brown.words() if word.isalpha())
             
             # Filter words by length
             self.word_lists = {4: [], 5: [], 6: []}
@@ -58,7 +58,7 @@ class WordService:
                 self.word_lists[length] = sorted(self.word_lists[length])
                 
         except Exception as e:
-            print(f"Error generating word lists from NLTK: {e}")
+            print(f"Error generating word lists from NLTK Brown corpus: {e}")
             # Fallback to basic word lists if NLTK fails
             self._use_fallback_words()
     

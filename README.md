@@ -4,9 +4,23 @@ A modern full-stack Wordle game implementation with React frontend and FastAPI b
 
 ## Project Structure
 
-```
-├── backend/
-│   ├── main.py              # Main FastAPI server with NLTK word validation
+`### Development Notes
+
+### File Organization
+- `main.py`: Current active backend with NLTK Brown Corpus integration
+- `main_old.py`: Legacy version without database features
+- `test_validation.py`: NLTK Brown Corpus word validation testing utilities
+- Database files are created automatically on first run
+
+### Technical Stack
+- **Backend**: FastAPI with SQLite database
+- **Frontend**: React with modern CSS animations
+- **Word Processing**: NLTK Brown Corpus with SSL certificate handling
+- **Validation**: Cached word sets for optimal performance
+- **Containerization**: Docker with multi-stage builds and nginx proxy
+- **Deployment**: Docker Compose orchestration with volume persistence
+- **Development**: Hot reload support with development containers
+│   ├── main.py              # Main FastAPI server with NLTK Brown Corpus validation
 │   ├── main_old.py          # Deprecated - old version without database
 │   ├── wordle_game.py       # Original game logic functions
 │   ├── wordle_stats.db      # SQLite database (created automatically)
@@ -29,10 +43,10 @@ A modern full-stack Wordle game implementation with React frontend and FastAPI b
 
 ### Game Features
 - **Multiple difficulty levels**: Easy (4 letters), Medium (5 letters), Hard (6 letters)
-- **NLTK-powered word validation**: 32,000+ valid English words across all difficulties
-  - 4,995 four-letter words
-  - 9,972 five-letter words  
-  - 17,464 six-letter words
+- **NLTK Brown Corpus word validation**: High-quality English words from real publications
+  - Contextual words from books, newspapers, and academic texts
+  - More realistic vocabulary than dictionary-only sources
+  - Common usage patterns for better gameplay experience
 - **Real-time feedback**: Green (correct), Yellow (wrong position), Red (not in word)
 - **Dynamic grid sizing**: Adapts to difficulty level
 - **Modern gradient UI**: Purple theme with glass-morphism effects
@@ -135,27 +149,27 @@ Frontend runs on http://localhost:5173
 
 ## Advanced Word Validation System
 
-The game features a sophisticated NLTK-powered word validation system:
+The game features a sophisticated NLTK Brown Corpus-powered word validation system:
 
 ### Word Library
-- **Total vocabulary**: 236,000+ English words from NLTK corpus
-- **Game-ready words**: 32,000+ filtered by length and validity
-- **Distribution**:
-  - Easy (4 letters): 4,995 words
-  - Medium (5 letters): 9,972 words
-  - Hard (6 letters): 17,464 words
+- **Source**: NLTK Brown Corpus - real English text from publications
+- **Quality**: Words from actual books, newspapers, and academic texts
+- **Context**: Natural language usage patterns for authentic vocabulary
+- **Filtering**: Only alphabetic words of appropriate lengths (4, 5, 6 letters)
 
 ### Technical Implementation
+- **Brown Corpus integration**: Words extracted from real published text
 - **Cached validation**: Words loaded once at startup for instant lookup
 - **Fallback system**: Hardcoded word lists if NLTK fails to load
 - **SSL handling**: Automatic certificate management for NLTK downloads
 - **Performance optimized**: Set-based lookups for O(1) validation speed
 
 ### Word Quality
-- All words are valid English dictionary entries
-- No proper nouns, abbreviations, or slang
-- Comprehensive coverage including common and uncommon words
-- Examples of valid words: HELL, QUIZ, JAZZ, LYNX, MYTH
+- All words sourced from real published English text
+- Natural vocabulary reflecting actual language usage
+- No artificial dictionary-only obscure terms
+- Better player experience with familiar words
+- Examples: ABOUT, WHICH, THEIR, WOULD, COULD
 
 ## Database Schema
 
