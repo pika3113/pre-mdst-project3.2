@@ -1,4 +1,4 @@
-# Wordle Game
+  # Wordle Game
 
 A modern full-stack Wordle game implementation with React frontend and FastAPI backend, featuring comprehensive word validation and elegant UI design.
 
