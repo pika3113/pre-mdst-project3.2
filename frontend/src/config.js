@@ -1,8 +1,7 @@
-// API configuration - Use Vite's import.meta.env instead of process.env
-console.log('All environment variables:', import.meta.env);
-console.log('MODE:', import.meta.env.MODE);
-console.log('VITE_API_URL specifically:', import.meta.env.VITE_API_URL);
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-console.log('Final API_BASE_URL:', API_BASE_URL);
+// development
+// const API_BASE_URL = 'http://localhost:8000';
+
+// production
+const API_BASE_URL = 'https://backend-production-8e98.up.railway.app/'
 export { API_BASE_URL };
