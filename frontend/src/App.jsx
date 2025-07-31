@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import "./App.css";
 import LandingPage from "./LandingPage";
 import MenuScreen from "./MenuScreen";
@@ -11,29 +11,7 @@ import GoogleCallback from "./GoogleCallback";
 // Component to handle authentication logic
 function AuthenticatedApp() {
   const [user, setUser] = useState(null);
-  const [isGoogleCallback, setIsGoogleCallback] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Check for Google OAuth callback
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const currentPath = window.location.pathname;
-    
-    console.log('App.jsx - Checking for Google OAuth callback:', {
-      code: code ? 'present' : 'missing',
-      currentPath: currentPath,
-      fullURL: window.location.href
-    });
-    
-    // Only set callback flag if we have a code and are on the callback path
-    if (code && (currentPath === '/auth/google/callback' || 
-                 (currentPath === '/' && window.location.search.includes('code=')))) {
-      console.log('App.jsx - Setting isGoogleCallback to true');
-      setIsGoogleCallback(true);
-    }
-  }, [location]);
 
   // Check for existing authentication on mount
   useEffect(() => {
@@ -51,10 +29,16 @@ function AuthenticatedApp() {
     }
   }, []);
 
+  // Add useEffect to debug user state changes
+  useEffect(() => {
+    console.log('User state changed:', user);
+  }, [user]);
+
   // Authentication handlers
   const handleAuthSuccess = (userData) => {
+    console.log('handleAuthSuccess called with:', userData);
     setUser(userData);
-    setIsGoogleCallback(false);
+    console.log('About to navigate to /menu');
     navigate('/menu');
     // Clear URL parameters after successful Google auth
     if (window.location.search) {
@@ -63,7 +47,6 @@ function AuthenticatedApp() {
   };
 
   const handleAuthError = (error) => {
-    setIsGoogleCallback(false);
     console.error('Auth error:', error);
     navigate('/');
     // Clear URL parameters after failed Google auth
@@ -78,16 +61,6 @@ function AuthenticatedApp() {
     setUser(null);
     navigate('/');
   };
-
-  // Handle Google OAuth callback
-  if (isGoogleCallback) {
-    return (
-      <GoogleCallback 
-        onAuthSuccess={handleAuthSuccess}
-        onAuthError={handleAuthError}
-      />
-    );
-  }
 
   // Routes for authenticated users
   if (user) {
@@ -107,6 +80,7 @@ function AuthenticatedApp() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage onAuthSuccess={handleAuthSuccess} />} />
+      <Route path="/auth/google/callback" element={<GoogleCallback onAuthSuccess={handleAuthSuccess} onAuthError={handleAuthError} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

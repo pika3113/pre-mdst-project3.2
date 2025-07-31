@@ -7,6 +7,15 @@ function GoogleCallback({ onAuthSuccess, onAuthError }) {
   const hasProcessedRef = useRef(false);
 
   useEffect(() => {
+    console.log('GoogleCallback component mounted');
+    console.log('URL params:', window.location.search);
+    console.log('hasProcessedRef:', hasProcessedRef.current);
+    
+    if (hasProcessedRef.current) {
+      console.log('Already processed, skipping');
+      return;
+    }
+    
     const handleCallback = async () => {
       // Prevent multiple executions
       if (hasProcessedRef.current) {
@@ -40,6 +49,8 @@ function GoogleCallback({ onAuthSuccess, onAuthError }) {
 
         setMessage('Exchanging code for tokens...');
         console.log('Google OAuth callback - Sending request to backend...');
+        console.log('Sending request to backend with:', { code, state });
+        console.log('API_BASE_URL:', API_BASE_URL);
 
         // Send code to backend
         const response = await fetch(`${API_BASE_URL}/auth/google/callback`, {
@@ -47,32 +58,33 @@ function GoogleCallback({ onAuthSuccess, onAuthError }) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            code: code,
-            state: state
-          }),
+          body: JSON.stringify({ code, state }),
         });
 
-        console.log('Google OAuth callback - Backend response status:', response.status);
-        const data = await response.json();
-        console.log('Google OAuth callback - Backend response data:', data);
+        console.log('Backend response status:', response.status);
+        console.log('Backend response ok:', response.ok);
 
-        if (!response.ok) {
-          throw new Error(data.detail || 'Authentication failed');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Backend response data:', data);
+
+          // Store token and user info
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          setStatus('success');
+          setMessage('Authentication successful! Redirecting...');
+
+          console.log('Google OAuth callback - Success! Calling onAuthSuccess...');
+          // Call success callback
+          setTimeout(() => {
+            onAuthSuccess(data.user);
+          }, 1000);
+        } else {
+          const errorText = await response.text();
+          console.log('Backend error response:', errorText);
+          throw new Error(errorText || 'Authentication failed');
         }
-
-        // Store token and user info
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        setStatus('success');
-        setMessage('Authentication successful! Redirecting...');
-
-        console.log('Google OAuth callback - Success! Calling onAuthSuccess...');
-        // Call success callback
-        setTimeout(() => {
-          onAuthSuccess(data.user);
-        }, 1000);
 
       } catch (error) {
         console.error('Google OAuth callback - Error:', error);
