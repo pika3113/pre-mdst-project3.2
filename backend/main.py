@@ -13,6 +13,7 @@ from auth_models import UserCreate, UserLogin, UserResponse, Token, GoogleAuthRe
 from google_auth import GoogleOAuthService
 from nltk.corpus import words
 import ssl
+import pytz
 
 # Download NLTK data if not already present
 try:
@@ -110,6 +111,12 @@ difficulty_levels = {
 # Game state storage
 game_sessions = {}
 
+# Timezone helper function
+def get_sgt_time():
+    """Get current time in Singapore timezone"""
+    sgt = pytz.timezone('Asia/Singapore')
+    return datetime.now(sgt)
+
 # Database setup
 DATABASE_PATH = os.getenv("DATABASE_PATH", "wordle_stats.db")
 
@@ -149,8 +156,32 @@ def init_database():
     conn.commit()
     conn.close()
 
+def migrate_timestamps_to_sgt():
+    """Migrate existing timestamps to SGT if they are in UTC format"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # Check if there are any games with timestamps that need migration
+        cursor.execute('SELECT COUNT(*) FROM games WHERE timestamp IS NOT NULL')
+        count = cursor.fetchone()[0]
+        
+        if count > 0:
+            print(f"Found {count} games with timestamps. Checking if migration is needed...")
+            
+            # For now, log this. In production, might want to
+            # convert UTC timestamps to SGT,,
+            # the new games will use the correct SGT timezone.
+            print("New games will be saved with SGT timezone.")
+        
+    except sqlite3.Error as e:
+        print(f"Error during timestamp migration: {e}")
+    finally:
+        conn.close()
+
 # Initialize database on startup
 init_database()
+migrate_timestamps_to_sgt()
 
 # Initialize authentication manager
 auth_manager = AuthManager(DATABASE_PATH)
@@ -204,10 +235,17 @@ def save_game_to_db(word: str, difficulty: str, guesses: int, won: bool, session
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
+    # Get current time in SGT and format it properly
+    sgt_time = get_sgt_time()
+    # Format as YYYY-MM-DD HH:MM:SS without timezone info since we know it's SGT
+    formatted_time = sgt_time.strftime('%Y-%m-%d %H:%M:%S')
+    
+    print(f"Saving game with SGT timestamp: {formatted_time}")
+    
     cursor.execute('''
-        INSERT INTO games (word, difficulty, guesses, won, session_id)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (word, difficulty, guesses, won, session_id))
+        INSERT INTO games (word, difficulty, guesses, won, session_id, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (word, difficulty, guesses, won, session_id, formatted_time))
     
     # Update user stats
     cursor.execute('SELECT current_streak FROM user_stats WHERE id = 1')
@@ -225,9 +263,9 @@ def save_game_to_db(word: str, difficulty: str, guesses: int, won: bool, session
     
     cursor.execute('''
         UPDATE user_stats 
-        SET current_streak = ?, max_streak = ?, last_updated = CURRENT_TIMESTAMP
+        SET current_streak = ?, max_streak = ?, last_updated = ?
         WHERE id = 1
-    ''', (new_streak, new_max_streak))
+    ''', (new_streak, new_max_streak, formatted_time))
     
     conn.commit()
     conn.close()
@@ -369,10 +407,26 @@ async def make_guess(session_id: str, data: GuessRequest):
     
     return {"cells": result['cells'], "message": result['message'], "won": is_win, "game_over": session["is_complete"]}
 
-@app.get("/stats")
-async def get_stats():
-    """Get game statistics"""
-    return calculate_stats()
+
+# Add this route to your main.py
+@app.put("/profile", response_model=UserResponse)
+async def update_profile(
+    profile_data: dict = Body(...),
+    current_user: dict = Depends(auth_manager.get_current_user)
+):
+    """Update user profile"""
+    try:
+        # Update user in database
+        updated_user = auth_manager.update_user_profile(
+            current_user["id"], 
+            profile_data
+        )
+        return UserResponse(**updated_user)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to update profile: {str(e)}"
+        )
 
 @app.get("/history")
 async def get_history():
@@ -400,6 +454,11 @@ async def get_history():
     
     conn.close()
     return {"games": games}
+
+@app.get("/stats")
+async def get_stats():
+    """Get user statistics"""
+    return calculate_stats()
 
 @app.get("/leaderboard")
 async def get_leaderboard():

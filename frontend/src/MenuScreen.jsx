@@ -1,10 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from './config';
 import './MenuScreen.css';
 
 function MenuScreen({ user, onLogout }) {
   const [selectedMode, setSelectedMode] = useState(null);
+  const [stats, setStats] = useState(null);
   const navigate = useNavigate();
+
+  // Fetch user stats for quick display
+  useEffect(() => {
+    fetchQuickStats();
+  }, []);
+
+  const fetchQuickStats = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const menuOptions = [
     {
@@ -34,36 +59,43 @@ function MenuScreen({ user, onLogout }) {
     }
   ];
 
+  const calculateWinRate = () => {
+    if (!stats || stats.games_played === 0) return '-';
+    return `${((stats.games_won / stats.games_played) * 100).toFixed(1)}%`;
+  };
+
   return (
     <div className="menu-screen">
       <div className="menu-header">
         <div className="user-info">
           <div className="user-avatar">
-            {user.picture ? (
-              <img src={user.picture} alt={user.name} />
+            {user.profile_picture ? (
+              <img src={user.profile_picture} alt={user.username} />
             ) : (
               <div className="avatar-placeholder">
-                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
               </div>
             )}
           </div>
           <div className="user-details">
-            <h2>Welcome back, {user.name || 'Player'}!</h2>
+            <h2>Welcome back, {user.username || 'Player'}!</h2>
             <p>Ready for your next word challenge?</p>
           </div>
         </div>
 
         <div className="header-actions">
           <button 
-            className="stats-btn"
-            onClick={() => navigate('/stats')}
+            className="profile-btn"
+            onClick={() => navigate('/profile')}
+            title="View Profile & Stats"
           >
-            📊 Stats
+            👤 Profile
           </button>
           
           <button 
             className="logout-btn"
             onClick={onLogout}
+            title="Logout"
           >
             🚪 Logout
           </button>
@@ -104,15 +136,15 @@ function MenuScreen({ user, onLogout }) {
         <div className="quick-stats">
           <div className="stat-item">
             <span className="stat-label">Games Played</span>
-            <span className="stat-value">-</span>
+            <span className="stat-value">{stats?.games_played || '-'}</span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Win Rate</span>
-            <span className="stat-value">-</span>
+            <span className="stat-value">{calculateWinRate()}</span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Best Streak</span>
-            <span className="stat-value">-</span>
+            <span className="stat-value">{stats?.max_streak || '-'}</span>
           </div>
         </div>
       </div>

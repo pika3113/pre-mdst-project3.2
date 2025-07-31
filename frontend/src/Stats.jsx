@@ -8,6 +8,19 @@ function Stats({ isOpen, onClose, onConnectionError }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Helper function to format date in SGT timezone
+  const formatDateSGT = (timestamp) => {
+    // The timestamp is already in SGT format from the backend
+    // So we just need to parse it and display it properly
+    const date = new Date(timestamp + '+08:00'); // Explicitly specify SGT offset
+    return date.toLocaleDateString('en-SG', {
+      timeZone: 'Asia/Singapore',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
   // API call wrapper with connection error handling
   const apiCall = async (endpoint, options = {}) => {
     const controller = new AbortController();
@@ -218,7 +231,7 @@ function Stats({ isOpen, onClose, onConnectionError }) {
                         </span>
                       </div>
                       <div className="history-date">
-                        {new Date(game.timestamp).toLocaleDateString()}
+                        {formatDateSGT(game.timestamp)}
                       </div>
                     </div>
                   ))

@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "r
 import "./App.css";
 import LandingPage from "./LandingPage";
 import MenuScreen from "./MenuScreen";
-import StatsScreen from "./StatsScreen";
+import ProfileScreen from "./ProfileScreen"; // Add this import
+import HistoryScreen from "./HistoryScreen"; // Add this import
 import PracticeGame from "./PracticeGame";
 import MultiplayerGame from "./MultiplayerGame";
 import GoogleCallback from "./GoogleCallback";
@@ -62,13 +63,19 @@ function AuthenticatedApp() {
     navigate('/');
   };
 
+  // handler for user profile updates
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   // Routes for authenticated users
   if (user) {
     return (
       <Routes>
         <Route path="/" element={<Navigate to="/menu" replace />} />
         <Route path="/menu" element={<MenuScreen user={user} onLogout={handleLogout} />} />
-        <Route path="/stats" element={<StatsScreen user={user} />} />
+        <Route path="/profile" element={<ProfileScreen user={user} onUserUpdate={handleUserUpdate} />} />
+        <Route path="/profile/gamehistory" element={<HistoryScreen user={user} />} />
         <Route path="/practice" element={<PracticeGame user={user} />} />
         <Route path="/multiplayer" element={<MultiplayerGame user={user} />} />
         <Route path="*" element={<Navigate to="/menu" replace />} />

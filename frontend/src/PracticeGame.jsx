@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from './config';
+import authUtils from './authUtils';
 import './PracticeGame.css';
 
 const MAX_GUESSES = 6;
@@ -27,56 +28,9 @@ function PracticeGame({ user }) {
     setColors(emptyColorGrid);
   };
 
-  // API call utility
+  // API call utility with auth handling
   const apiCall = async (endpoint, options = {}) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    try {
-      const url = `${API_BASE_URL}${endpoint}`;
-      const token = localStorage.getItem('access_token');
-      const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
-      };
-      
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        if (response.status === 502 || response.status >= 500) {
-          setHasConnectionError(true);
-          throw new Error('Connection error');
-        }
-        
-        const errorData = await response.json();
-        // Create an error with the detail message
-        const error = new Error(errorData.detail || 'Server error');
-        error.status = response.status;
-        error.data = errorData;
-        throw error;
-      }
-      
-      return await response.json();
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      if (error.name === 'AbortError' || error.message === 'Failed to fetch') {
-        setHasConnectionError(true);
-        throw new Error('Connection error');
-      }
-      
-      throw error;
-    }
+    return await authUtils.apiCall(endpoint, options, navigate);
   };
 
   // Start a new game
@@ -90,6 +44,8 @@ function PracticeGame({ user }) {
         method: 'POST',
         body: JSON.stringify({}),
       });
+
+      if (data === null) return; // Auth failure, user will be redirected
 
       setSessionId(data.session_id);
       setWordLength(data.word_length);
@@ -119,6 +75,8 @@ function PracticeGame({ user }) {
           guess: guess
         }),
       });
+
+      if (data === null) return; // Auth failure, user will be redirected
 
       // Update colors - the backend returns 'cells' with color codes
       const newColors = [...colors];
@@ -296,7 +254,11 @@ function PracticeGame({ user }) {
                 <button onClick={() => startNewGame()} className="new-game-btn">
                   🎮 Play Again
                 </button>
-                <button onClick={() => navigate('/stats')} className="stats-btn">
+                <button onClick={() => {
+                  // Set a flag to indicate legitimate navigation to stats
+                  sessionStorage.setItem('allowStatsAccess', 'true');
+                  navigate('/profile?tab=stats');
+                }} className="stats-btn">
                   📊 View Stats
                 </button>
               </div>
