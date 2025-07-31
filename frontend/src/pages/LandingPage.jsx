@@ -69,7 +69,6 @@ function LandingPage({ onAuthSuccess }) {
         <div className="landing-content">
           {/* Header Section */}
           <div className="landing-header">
-            <div className="header-badge">🎮 MINIGAMES COLLECTION</div>
             <h1 className="landing-title">
               Word<span className="title-accent">Games</span> Hub
             </h1>
@@ -121,7 +120,7 @@ function LandingPage({ onAuthSuccess }) {
                   </div>
 
                   {/* Game Stats */}
-                  <div className="game-stats">
+                  {/* <div className="game-stats">
                     <div className="stat">
                       <span className="stat-label">Difficulty</span>
                       <span className="stat-value">{game.difficulty}</span>
@@ -130,15 +129,16 @@ function LandingPage({ onAuthSuccess }) {
                       <span className="stat-label">Playing Now</span>
                       <span className="stat-value">{game.players}</span>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Play Button */}
-                  <div className="game-action">
+                  {/* <div className="game-action">
                     <button className="play-btn">
                       <span>Play Now</span>
                       <div className="btn-glow"></div>
                     </button>
-                  </div>
+                  </div> */}
+                  
                 </div>
 
                 {/* Hover Effect */}
