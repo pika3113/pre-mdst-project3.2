@@ -7,6 +7,8 @@ import ProfileScreen from "./pages/ProfileScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import PracticeGame from "./components/game/PracticeGame";
 import MultiplayerGame from "./components/game/MultiplayerGame";
+import HangmanGame from "./components/game/HangmanGame";
+import MorphleGame from "./components/game/MorphleGame";
 import GoogleCallback from "./components/auth/GoogleCallback";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
@@ -37,6 +39,8 @@ function AuthenticatedApp() {
         <Route path="/profile/gamehistory" element={<HistoryScreen user={user} />} />
         <Route path="/practice" element={<PracticeGame user={user} />} />
         <Route path="/multiplayer" element={<MultiplayerGame user={user} />} />
+        <Route path="/hangman" element={<HangmanGame user={user} />} />
+        <Route path="/morphle" element={<MorphleGame user={user} />} />
         <Route path="*" element={<Navigate to="/menu" replace />} />
       </Routes>
     );

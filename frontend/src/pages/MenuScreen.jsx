@@ -34,11 +34,28 @@ function MenuScreen({ user, onLogout }) {
   const menuOptions = [
     {
       id: 'practice',
-      title: 'Practice Mode',
-      description: 'Play solo games to improve your skills',
-      icon: '🎯',
+      title: 'Wordle',
+      description: 'Classic 5-letter word guessing game',
+      icon: '🔤',
       color: '#10b981',
       available: true
+    },
+    {
+      id: 'hangman',
+      title: 'Hangle',
+      description: 'Classic hangman word guessing game',
+      icon: '🎪',
+      color: '#e11d48',
+      available: true
+    },
+    {
+      id: 'morphle',
+      title: 'Mophle',
+      description: 'Transform words step by step',
+      icon: '🔄',
+      color: '#8b5cf6',
+      available: false,
+      comingSoon: true
     },
     {
       id: 'multiplayer',
@@ -47,15 +64,6 @@ function MenuScreen({ user, onLogout }) {
       icon: '⚔️',
       color: '#f59e0b',
       available: true
-    },
-    {
-      id: 'tournament',
-      title: 'Tournaments',
-      description: 'Compete in organized events',
-      icon: '🏆',
-      color: '#8b5cf6',
-      available: false,
-      comingSoon: true
     }
   ];
 
@@ -103,7 +111,7 @@ function MenuScreen({ user, onLogout }) {
       </div>
 
       <div className="menu-content">
-        <h1 className="menu-title">Choose Your Game Mode</h1>
+        <h1 className="menu-title">Choose Your Word Game</h1>
         
         <div className="game-modes">
           {menuOptions.map((mode) => (

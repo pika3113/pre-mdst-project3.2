@@ -17,7 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Download NLTK data during build to avoid runtime issues
-RUN python -c "import nltk; nltk.download('words', quiet=True)"
+RUN python -c "import nltk; nltk.download('words', quiet=True); nltk.download('brown', quiet=True)"
 
 # Copy application code
 COPY . .

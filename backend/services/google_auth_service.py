@@ -35,7 +35,8 @@ class GoogleOAuthService:
             "scope": " ".join(self.scopes),
             "response_type": "code",
             "access_type": "offline",
-            "prompt": "consent"
+            # Remove "prompt": "consent" to avoid consent screen every time
+            # Only prompt if necessary
         }
         
         if state:
