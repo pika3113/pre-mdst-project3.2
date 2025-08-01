@@ -16,11 +16,23 @@ function MenuScreen({ user, onLogout }) {
   const fetchQuickStats = async () => {
     try {
       const token = localStorage.getItem('access_token');
+      if (!token) {
+        // No token available, user should be logged out
+        onLogout();
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/user/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      if (response.status === 401) {
+        // Token expired, trigger logout through proper flow
+        onLogout();
+        return;
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -28,6 +40,7 @@ function MenuScreen({ user, onLogout }) {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+      // Don't set stats on error, component will show default values
     }
   };
 
@@ -50,12 +63,11 @@ function MenuScreen({ user, onLogout }) {
     },
     {
       id: 'morphle',
-      title: 'Mophle',
+      title: 'Morphle',
       description: 'Transform words step by step',
       icon: '🔄',
       color: '#8b5cf6',
-      available: false,
-      comingSoon: true
+      available: true
     },
     {
       id: 'multiplayer',

@@ -9,7 +9,7 @@ from models.hangman_models import (
     SubmitGuessRequest, SubmitWordGuessRequest, HangmanGuessResponse,
     HangmanGameStateResponse, HangmanHintRequest, HangmanHintResponse
 )
-from services.hangman_service import hangman_service
+from services.hangman_service_wrapper import hangman_service
 from services.auth_service import AuthManager
 from core.database import db_manager
 

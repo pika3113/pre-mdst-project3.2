@@ -36,7 +36,7 @@ function AuthenticatedApp() {
         <Route path="/" element={<Navigate to="/menu" replace />} />
         <Route path="/menu" element={<MenuScreen user={user} onLogout={handleLogout} />} />
         <Route path="/profile" element={<ProfileScreen user={user} onUserUpdate={handleUserUpdate} />} />
-        <Route path="/profile/gamehistory" element={<HistoryScreen user={user} />} />
+        <Route path="/profile/gamehistory" element={<HistoryScreen user={user} onLogout={handleLogout} />} />
         <Route path="/practice" element={<PracticeGame user={user} />} />
         <Route path="/multiplayer" element={<MultiplayerGame user={user} />} />
         <Route path="/hangman" element={<HangmanGame user={user} />} />

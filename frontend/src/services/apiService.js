@@ -35,6 +35,7 @@ export const apiRequest = async (endpoint, options = {}) => {
         // Handle token expiry
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
+        alert('Your session has expired. Please log in again.');
         window.location.href = '/';
         return null;
       }

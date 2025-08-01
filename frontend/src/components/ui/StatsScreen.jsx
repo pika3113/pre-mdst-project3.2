@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/config';
 import './StatsScreen.css';
 
-function StatsScreen({ user }) {
+function StatsScreen({ user, onLogout }) {
   const [stats, setStats] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,12 +18,24 @@ function StatsScreen({ user }) {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('access_token');
+      if (!token) {
+        // No token available, user should be logged out
+        if (onLogout) onLogout();
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/user/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
+      if (response.status === 401) {
+        // Token expired, trigger logout through proper flow
+        if (onLogout) onLogout();
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         setStats(data);

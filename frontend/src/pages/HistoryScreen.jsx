@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../utils/config';
 import './HistoryScreen.css';
 
-function HistoryScreen({ user }) {
+function HistoryScreen({ user, onLogout }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,6 +51,19 @@ function HistoryScreen({ user }) {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
+        // Handle token expiry - 401 Unauthorized
+        if (response.status === 401) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('user');
+          alert('Your session has expired. Please log in again.');
+          if (onLogout) {
+            onLogout();
+          } else {
+            navigate('/');
+          }
+          return null;
+        }
+        
         const errorData = await response.json();
         throw errorData;
       }
