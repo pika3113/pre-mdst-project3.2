@@ -80,18 +80,27 @@ function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   const handleGoogleAuth = async () => {
     try {
+      console.log('Starting Google auth...');
+      console.log('API URL:', `${API_BASE_URL}/api/auth/google`);
+      
       // Get Google auth URL
       const response = await fetch(`${API_BASE_URL}/api/auth/google`);
+      console.log('Response status:', response.status);
+      
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (!response.ok) {
+        console.error('Failed to get Google auth URL:', data);
         throw new Error('Failed to get Google auth URL');
       }
 
+      console.log('Redirecting to:', data.auth_url);
       // Redirect to Google OAuth
       window.location.href = data.auth_url;
     } catch (err) {
-      setError('Google authentication failed');
+      console.error('Google auth error:', err);
+      setError('Google authentication failed: ' + err.message);
     }
   };
 

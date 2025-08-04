@@ -107,15 +107,36 @@ class GameService:
             if is_completed:
                 self._update_user_statistics(user_id, difficulty, is_won, new_guess_count)
             
+            # Convert color names to color codes that frontend expects
+            color_map = {
+                'green': '#1fdb0dff',  # correct
+                'yellow': '#e4c53aff', # present
+                'red': '#d71717ff'     # absent
+            }
+            cells = [color_map.get(color, '#d71717ff') for color in guess_result]
+            
+            # Prepare message for game over scenarios
+            message = ""
+            if is_completed:
+                if is_won:
+                    message = "🎉 Congratulations! You guessed it!"
+                else:
+                    message = f"Game over! The word was: {target_word}"
+            
             return {
                 "game_id": game_id,
                 "guess": guess,
-                "result": guess_result,
+                "cells": cells,  # Frontend expects 'cells' with color codes
+                "won": is_won,   # Frontend expects 'won' boolean
+                "game_over": is_completed,  # Frontend expects 'game_over' boolean
+                "word": target_word if is_completed else None,  # Frontend expects 'word'
+                "message": message,  # Frontend expects 'message'
                 "guesses_made": new_guess_count,
                 "max_guesses": MAX_GUESSES,
                 "game_state": "won" if is_won else "lost" if is_completed else "active",
                 "target_word": target_word if is_completed else None,
-                "all_guesses": guesses_list
+                "all_guesses": guesses_list,
+                "result": guess_result  # Keep original for backward compatibility
             }
             
         finally:

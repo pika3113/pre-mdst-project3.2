@@ -35,7 +35,7 @@ class DatabaseManager:
                     guesses TEXT,
                     guess_count INTEGER,
                     won BOOLEAN,
-                    completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    completed_at DATETIME DEFAULT NULL,
                     time_taken INTEGER,
                     FOREIGN KEY (user_id) REFERENCES users (id)
                 )

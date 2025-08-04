@@ -22,7 +22,7 @@ function LandingPage({ onAuthSuccess }) {
     },
     {
       id: 'hangman',
-      title: 'Hangman',
+      title: 'Hangle',
       subtitle: 'Save the stick figure',
       description: 'Guess letters to reveal the hidden word before the drawing is complete. Every wrong guess adds a line!',
       icon: '🎪',

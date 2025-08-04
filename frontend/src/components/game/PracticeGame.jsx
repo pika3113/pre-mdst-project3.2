@@ -90,7 +90,7 @@ function PracticeGame({ user }) {
       setColors(newColors);
 
       if (data.won) {
-        setMessage('🎉 Congratulations! You guessed it!');
+        setMessage('Congratulations! You guessed it!');
         setIsGameOver(true);
       } else if (data.game_over) {
         setMessage(data.message || `Game over! The word was: ${data.word || 'unknown'}`);

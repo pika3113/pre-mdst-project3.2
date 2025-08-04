@@ -46,7 +46,7 @@ function MenuScreen({ user, onLogout }) {
 
   const menuOptions = [
     {
-      id: 'practice',
+      id: 'wordle',
       title: 'Wordle',
       description: 'Classic 5-letter word guessing game',
       icon: '🔤',
@@ -54,7 +54,7 @@ function MenuScreen({ user, onLogout }) {
       available: true
     },
     {
-      id: 'hangman',
+      id: 'hangle',
       title: 'Hangle',
       description: 'Classic hangman word guessing game',
       icon: '🎪',
@@ -67,6 +67,14 @@ function MenuScreen({ user, onLogout }) {
       description: 'Transform words step by step',
       icon: '🔄',
       color: '#8b5cf6',
+      available: true
+    },
+    {
+      id: 'roulette',
+      title: 'Roulette',
+      description: 'Try your luck with European Roulette',
+      icon: '🎰',
+      color: '#dc2626',
       available: true
     },
     {

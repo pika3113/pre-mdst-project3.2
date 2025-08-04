@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 import json
+from urllib.parse import urlencode, quote_plus
 
 class GoogleOAuthService:
     def __init__(self):
@@ -13,7 +14,7 @@ class GoogleOAuthService:
         self.client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
         
         # Google OAuth URLs
-        self.google_auth_url = "https://accounts.google.com/o/oauth2/auth"
+        self.google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
         self.google_token_url = "https://oauth2.googleapis.com/token"
         self.google_userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
         
@@ -29,21 +30,25 @@ class GoogleOAuthService:
     
     def get_authorization_url(self, state: str = None) -> str:
         """Generate Google OAuth authorization URL"""
+        if not self.client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth client_id not configured"
+            )
+            
         params = {
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
-            "scope": " ".join(self.scopes),
+            "scope": " ".join(self.scopes),  # Use spaces for scope separation
             "response_type": "code",
             "access_type": "offline",
-            # Remove "prompt": "consent" to avoid consent screen every time
-            # Only prompt if necessary
         }
         
         if state:
             params["state"] = state
         
-        # Build URL
-        param_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        # Use proper URL encoding
+        param_string = urlencode(params, quote_via=quote_plus)
         return f"{self.google_auth_url}?{param_string}"
     
     def exchange_code_for_token(self, code: str) -> Dict:

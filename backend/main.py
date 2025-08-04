@@ -11,8 +11,8 @@ from api import api_router
 
 # Create FastAPI application
 app = FastAPI(
-    title="Wordle Game API",
-    description="A modern full-stack Wordle game with authentication and statistics",
+    title="WordGames API",
+    description="A hub with 3 games",
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -34,16 +34,22 @@ app.include_router(api_router)
 @app.on_event("startup")
 async def startup_event():
     """Initialize application on startup"""
-    print("Starting Wordle Game API...")
+    print("Starting WordGames API...")
     print("Initializing database...")
     db_manager.init_database()
+    
+    # Also initialize auth tables
+    from services.auth_service import AuthManager
+    auth_manager = AuthManager(db_manager.db_path)
+    auth_manager.init_auth_tables()
+    
     print("Database initialized successfully")
-    print("Wordle Game API is ready!")
+    print("WordGames API is ready!")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
-    print("Shutting down Wordle Game API...")
+    print("Shutting down WordGames API...")
 
 # Health check endpoint
 @app.get("/health")
@@ -51,7 +57,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "service": "Wordle Game API",
+        "service": "WordGames API",
         "version": "2.0.0"
     }
 
@@ -60,7 +66,7 @@ async def health_check():
 async def root():
     """Root endpoint with API information"""
     return {
-        "message": "Welcome to the Wordle Game API",
+        "message": "Welcome to the WordGames API",
         "version": "2.0.0",
         "docs": "/docs",
         "health": "/health"

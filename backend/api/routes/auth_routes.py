@@ -1,7 +1,8 @@
 """
 Authentication API routes
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi.responses import JSONResponse
 
 from models.auth_models import (
     UserCreate, UserLogin, UserResponse, Token,
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 # Initialize services
 auth_manager = AuthManager(db_manager.db_path)
-google_service = GoogleOAuthService()
+# Don't initialize google_service globally - create fresh instances
 
 
 @router.post("/register", response_model=Token)
@@ -76,8 +77,29 @@ async def login_user(login_data: UserLogin) -> Token:
 async def google_auth_url():
     """Get Google OAuth authorization URL"""
     try:
-        auth_url = google_service.get_authorization_url()
-        return {"auth_url": auth_url}
+        google_service = GoogleOAuthService()
+        # Add a state parameter for security and to potentially resolve CSP issues
+        import secrets
+        state = secrets.token_urlsafe(32)
+        nonce = secrets.token_urlsafe(32)  # Generate nonce for CSP
+        auth_url = google_service.get_authorization_url(state=state)
+        
+        # Create JSON response with cache-control and CSP headers
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Content-Security-Policy": f"script-src 'nonce-{nonce}' 'unsafe-inline' 'unsafe-eval'; object-src 'none';"
+        }
+        
+        return JSONResponse(
+            content={
+                "auth_url": auth_url,
+                "nonce": nonce,
+                "state": state
+            },
+            headers=headers
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -97,6 +119,7 @@ async def google_callback(request_data: GoogleCallbackRequest) -> GoogleAuthResp
             )
         
         # Process Google OAuth with the authorization code
+        google_service = GoogleOAuthService()
         result = google_service.process_google_auth(code)
         
         if not result:
@@ -130,6 +153,7 @@ async def google_callback(request_data: GoogleCallbackRequest) -> GoogleAuthResp
 async def google_auth(google_request: GoogleAuthRequest) -> GoogleAuthResponse:
     """Authenticate user with Google OAuth"""
     try:
+        google_service = GoogleOAuthService()
         result = google_service.verify_google_token(google_request.credential)
         
         if not result:

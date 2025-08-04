@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <!-- Simplified game controller for favicon -->
+  <rect x="2" y="6" width="12" height="6" rx="3" fill="#4F46E5"/>
+  
+  <!-- D-pad -->
+  <rect x="4" y="7.5" width="1" height="3" fill="white"/>
+  <rect x="3.5" y="8.5" width="2" height="1" fill="white"/>
+  
+  <!-- Buttons -->
+  <circle cx="11" cy="8" r="0.8" fill="#EF4444"/>
+  <circle cx="12.5" cy="8" r="0.8" fill="#10B981"/>
+  <circle cx="11.75" cy="9.5" r="0.8" fill="#F59E0B"/>
+  <circle cx="11.75" cy="6.5" r="0.8" fill="#3B82F6"/>
+  
+  <!-- Mini game symbols -->
+  <circle cx="7" cy="3" r="1" fill="#8B5CF6"/>
+  <rect x="9" y="2" width="2" height="2" fill="#EC4899"/>
+  <polygon points="13,4 14,2 15,4" fill="#06B6D4"/>
+</svg>

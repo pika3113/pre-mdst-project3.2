@@ -32,11 +32,16 @@ class GuessResult(BaseModel):
 class SubmitGuessResponse(BaseModel):
     game_id: int
     guess: str
-    result: List[str]
+    result: List[str]  # For backward compatibility
+    cells: List[str]   # Frontend expects this - color codes
+    won: bool          # Frontend expects this
+    game_over: bool    # Frontend expects this
+    word: Optional[str] = None  # Frontend expects this (target word)
+    message: str = ""  # Frontend expects this
     guesses_made: int
     max_guesses: int
     game_state: str
-    target_word: Optional[str] = None
+    target_word: Optional[str] = None  # For backward compatibility
     all_guesses: List[GuessResult]
 
 
