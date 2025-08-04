@@ -3,7 +3,7 @@ import "./App.css";
 import LandingPage from "./LandingPage";
 import MenuScreen from "./MenuScreen";
 import StatsScreen from "./StatsScreen";
-import PracticeGame from "./PracticeGame";
+import WordleGame from "./components/game/WordleGame";
 import MultiplayerGame from "./MultiplayerGame";
 import GoogleCallback from "./GoogleCallback";
 
@@ -118,7 +118,7 @@ function App() {
     
     case 'practice':
       return (
-        <PracticeGame 
+        <WordleGame 
           user={user}
           onNavigate={handleNavigate}
         />

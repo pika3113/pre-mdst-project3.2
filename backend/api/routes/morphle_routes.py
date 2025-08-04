@@ -133,3 +133,35 @@ async def get_morphle_cache_stats(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get cache stats: {str(e)}"
         )
+
+
+@router.get("/debug/answer/{game_id}")
+async def get_morphle_answer(
+    game_id: str,
+    current_user: dict = Depends(auth_manager.get_current_user)
+) -> Dict:
+    """DEBUG ONLY: Get the answer for a morphle game (for development/debugging)"""
+    try:
+        # Get the game state which includes the target word
+        game_state = optimized_morphle_service.get_game_state(game_id, current_user["id"])
+        
+        if not game_state:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game not found"
+            )
+        
+        return {
+            "game_id": game_id,
+            "answer": game_state.get("target_word", "Unknown"),
+            "start_word": game_state.get("start_word", "Unknown"),
+            "difficulty": game_state.get("difficulty", "Unknown"),
+            "word_length": game_state.get("word_length", 0),
+            "ideal_steps": game_state.get("ideal_steps", 0),
+            "debug": True
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get morphle answer: {str(e)}"
+        )

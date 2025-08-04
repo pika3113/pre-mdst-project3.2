@@ -28,6 +28,52 @@ Traditional word-guessing game with hints available.
 
 ## 🚀 Quick Start
 
+### Using Scripts (Recommended)
+```bash
+# Start the complete system with authentication
+start_complete_system.bat
+
+# Or start just the Wordle game
+scripts/start_wordle_game.bat
+
+# Or start Wordle with authentication
+scripts/start_wordle_with_auth.bat
+```
+
+### Using Docker
+```bash
+# Start all services
+scripts/docker/start_docker.bat
+
+# Stop all services  
+scripts/docker/stop_docker.bat
+```
+
+### Manual Setup
+```bash
+# Setup authentication (first time only)
+scripts/setup/setup_auth.bat
+
+# Check if everything is configured correctly
+scripts/setup/check_setup.bat
+```
+
+## 📁 Project Structure
+
+```
+├── backend/           # FastAPI backend server
+├── frontend/          # React frontend application
+├── docs/             # All project documentation
+│   ├── AUTHENTICATION_SETUP.md
+│   ├── DEPLOYMENT.md
+│   └── ...
+├── scripts/          # Utility scripts organized by category
+│   ├── setup/        # Initial setup scripts
+│   ├── debug/        # Debug and testing tools
+│   ├── docker/       # Docker management scripts
+│   └── ...           # Game launcher scripts
+└── docker-compose.yml # Container orchestration
+
 ### Using Docker (Easiest)
 ```bash
 # Start the app
@@ -100,12 +146,27 @@ docker-compose -f docker-compose.dev.yml up
 
 # Reset database
 docker-compose down -v
+
+# Debug tools
+python scripts/debug/check_db.py      # Check database status
+python scripts/debug/debug_auth.py    # Test authentication
+python scripts/debug/debug_balance.py # Check balance system
 ```
 
 ### Environment Setup
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - Database: SQLite (auto-created)
+
+## 📚 Documentation
+
+All project documentation has been organized in the `docs/` directory:
+
+- **Setup Guide**: `docs/AUTHENTICATION_SETUP.md` - Complete setup instructions
+- **Deployment**: `docs/DEPLOYMENT.md` - Production deployment guide  
+- **Architecture**: `docs/MODULAR_ARCHITECTURE.md` - Technical architecture overview
+- **Troubleshooting**: `docs/GOOGLE_AUTH_TROUBLESHOOTING.md` - Fix common auth issues
+- **Scripts**: `scripts/README.md` - All utility scripts documentation
 
 ## 🎯 Contributing
 

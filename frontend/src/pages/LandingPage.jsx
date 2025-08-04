@@ -70,7 +70,7 @@ function LandingPage({ onAuthSuccess }) {
           {/* Header Section */}
           <div className="landing-header">
             <h1 className="landing-title">
-              Word<span className="title-accent">Games</span> Hub
+              Word<span className="title-accent">Games</span>
             </h1>
             <p className="landing-subtitle">
               Master the art of words with our collection of brain-teasing games.

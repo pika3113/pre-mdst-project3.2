@@ -1,7 +1,7 @@
 """
 Roulette game API routes
 """
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any
 
 from models.roulette_api_models import (
@@ -9,15 +9,22 @@ from models.roulette_api_models import (
     RouletteBet
 )
 from services.roulette_service import RouletteService
+from services.auth_service import AuthManager
+from services.balance_service import balance_service
+from core.database import db_manager
 
 router = APIRouter(prefix="/api/roulette", tags=["roulette"])
 
-# Initialize roulette service
+# Initialize services
 roulette_service = RouletteService()
+auth_manager = AuthManager(db_manager.db_path)
 
 
 @router.post("/play", response_model=RouletteGameResponse)
-async def play_roulette(game_request: RouletteGameRequest) -> RouletteGameResponse:
+async def play_roulette(
+    game_request: RouletteGameRequest,
+    current_user: dict = Depends(auth_manager.get_current_user)
+) -> RouletteGameResponse:
     """Play a round of roulette"""
     try:
         # Convert Pydantic models to the format expected by the service
@@ -42,8 +49,8 @@ async def play_roulette(game_request: RouletteGameRequest) -> RouletteGameRespon
             
             bets.append(bet_list)
         
-        # Play the game
-        result = roulette_service.play_roulette(bets)
+        # Play the game with user_id
+        result = roulette_service.play_roulette(bets, current_user["id"])
         
         return RouletteGameResponse(**result)
         

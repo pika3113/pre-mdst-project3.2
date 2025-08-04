@@ -40,6 +40,7 @@ class RouletteGameResponse(BaseModel):
     winning_bets: List[RouletteWinningBet] = Field(..., description="List of winning bets")
     losing_bets: List[RouletteLosingBet] = Field(..., description="List of losing bets")
     net_result: int = Field(..., description="Net result (winnings - total bet amount)")
+    new_balance: int = Field(..., description="User's balance after the game")
 
 
 class RouletteInfoResponse(BaseModel):

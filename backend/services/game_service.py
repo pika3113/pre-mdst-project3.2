@@ -199,6 +199,37 @@ class GameService:
             
         finally:
             conn.close()
+
+    def get_game_answer(self, game_id: int, user_id: int) -> Optional[Dict]:
+        """DEBUG: Get game answer (including target word regardless of completion)"""
+        conn = db_manager.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                SELECT word, difficulty, guesses, guess_count, won, completed_at
+                FROM games 
+                WHERE id = ? AND user_id = ?
+            ''', (game_id, user_id))
+            
+            game_row = cursor.fetchone()
+            if not game_row:
+                return None
+            
+            target_word, difficulty, guesses_json, guess_count, won, completed_at = game_row
+            
+            return {
+                "game_id": game_id,
+                "target_word": target_word,
+                "difficulty": difficulty,
+                "word_length": len(target_word),
+                "guesses_made": guess_count,
+                "won": won,
+                "completed": bool(completed_at)
+            }
+            
+        finally:
+            conn.close()
     
     def _update_user_statistics(self, user_id: int, difficulty: str, won: bool, guess_count: int):
         """Update user statistics after game completion"""

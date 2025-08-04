@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { rouletteService } from '../../services/rouletteService';
+import { balanceService } from '../../services/balanceService';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import './RouletteGame.css';
 
@@ -11,10 +12,25 @@ function RouletteGame({ user }) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [lastResult, setLastResult] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [balance, setBalance] = useState(1000); // Starting balance
+  const [balance, setBalance] = useState(0);
   const [message, setMessage] = useState('');
   const [selectedNumbers, setSelectedNumbers] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    loadGameInfo();
+    loadBalance();
+  }, []);
+
+  const loadBalance = async () => {
+    try {
+      const balanceInfo = await balanceService.getBalance();
+      setBalance(balanceInfo.balance);
+    } catch (error) {
+      console.error('Failed to load balance:', error);
+      setMessage('Failed to load balance');
+    }
+  };
 
   useEffect(() => {
     loadGameInfo();
@@ -223,9 +239,13 @@ function RouletteGame({ user }) {
           const result = await rouletteService.playRoulette(bets, navigate);
           setLastResult(result);
           
-          // Update balance
-          const newBalance = balance + result.net_result;
-          setBalance(newBalance);
+          // Update balance from server response
+          if (result.new_balance !== undefined) {
+            setBalance(result.new_balance);
+          } else {
+            // Fallback: reload balance from server
+            await loadBalance();
+          }
           
           // Clear bets after spin
           setBets([]);
@@ -241,7 +261,11 @@ function RouletteGame({ user }) {
           setIsSpinning(false);
         } catch (error) {
           console.error('Failed to spin wheel:', error);
-          setMessage('Failed to spin wheel. Please try again.');
+          if (error.message.includes('Insufficient balance')) {
+            setMessage('Insufficient balance to place these bets!');
+          } else {
+            setMessage('Failed to spin wheel. Please try again.');
+          }
           setIsSpinning(false);
         }
       }, 2000);

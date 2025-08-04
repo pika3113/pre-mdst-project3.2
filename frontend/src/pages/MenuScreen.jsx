@@ -113,6 +113,14 @@ function MenuScreen({ user, onLogout }) {
 
         <div className="header-actions">
           <button 
+            className="balance-btn"
+            onClick={() => navigate('/balance')}
+            title="View Balance & Earnings"
+          >
+            💰 Wallet
+          </button>
+          
+          <button 
             className="profile-btn"
             onClick={() => navigate('/profile')}
             title="View Profile & Stats"

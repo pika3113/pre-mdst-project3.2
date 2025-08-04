@@ -35,7 +35,7 @@ def test_imports():
         
         print("Testing API routes imports...")
         from api.routes.auth_routes import router as auth_router
-        from api.routes.game_routes import router as game_router  
+        from api.routes.wordle_routes import router as wordle_router  
         from api.routes.user_routes import router as user_router
         print("✅ API routes imports successful")
         

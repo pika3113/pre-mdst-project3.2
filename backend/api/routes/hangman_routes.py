@@ -120,3 +120,43 @@ async def get_hangman_hint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get hint: {str(e)}"
         )
+
+
+@router.get("/debug/answer/{game_id}")
+async def get_hangman_answer(
+    game_id: str,
+    current_user: dict = Depends(auth_manager.get_current_user)
+) -> Dict:
+    """DEBUG ONLY: Get the answer for a hangman game (for development/debugging)"""
+    try:
+        # Check if game exists
+        if game_id not in hangman_service.games:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game not found"
+            )
+        
+        game = hangman_service.games[game_id]
+        
+        # Check authorization
+        if game.user_id != current_user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this game"
+            )
+        
+        return {
+            "game_id": game_id,
+            "answer": game.word,  # Direct access to the word for debug purposes
+            "difficulty": game.difficulty,
+            "word_length": len(game.word),
+            "remaining_guesses": game.remaining_guesses,
+            "debug": True
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get hangman answer: {str(e)}"
+        )

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authUtils } from '../../services/authService';
+import gameDebugManager from '../../utils/debugUtils';
 import './MorphleGame.css';
 
 function MorphleGame({ user }) {
@@ -161,6 +162,59 @@ function MorphleGame({ user }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Console command to reveal answer (development only)
+  const revealAnswer = async () => {
+    // Temporarily removing dev check for testing
+    // if (!import.meta.env.DEV) {
+    //   console.warn('Debug commands are only available in development mode');
+    //   return;
+    // }
+
+    if (!currentGame?.game_id) {
+      console.warn('Morphle Debug: No active game session');
+      return;
+    }
+
+    try {
+      const data = await apiCall(`/api/morphle/debug/answer/${currentGame.game_id}`);
+      if (data === null) return; // Auth failure
+
+      console.log('MORPHLE ANSWER:', data.answer);
+      console.info('Game Info:', {
+        answer: data.answer,
+        startWord: data.start_word,
+        gameId: data.game_id,
+        difficulty: data.difficulty,
+        wordLength: data.word_length,
+        idealSteps: data.ideal_steps
+      });
+      
+    } catch (error) {
+      console.error('Morphle Debug: Failed to retrieve answer', error);
+    }
+  };
+
+  // Set up debug console commands
+  useEffect(() => {
+    // Register with universal debug manager
+    if (currentGame?.game_id) {
+      gameDebugManager.setActiveGame('morphle', { 
+        gameId: currentGame.game_id, 
+        difficulty: currentGame.difficulty,
+        startWord: currentGame.start_word,
+        targetWord: currentGame.target_word
+      });
+    }
+
+    // Set up debug commands (temporarily always enabled for testing)
+    window.revealMorphleAnswer = revealAnswer;
+    
+    return () => {
+      if (window.hasOwnProperty('revealMorphleAnswer')) delete window.revealMorphleAnswer;
+      if (!currentGame?.game_id) gameDebugManager.clearActiveGame();
+    };
+  }, [currentGame?.game_id]);
+
   // Menu screen
   if (gameState === 'menu') {
     return (
@@ -202,7 +256,7 @@ function MorphleGame({ user }) {
                 className="difficulty-btn normal"
                 disabled={loading}
               >
-                <div className="difficulty-icon">⚡</div>
+                <div className="difficulty-icon">N</div>
                 <h3>Normal</h3>
                 <p>5 letters • $40 reward</p>
               </button>
@@ -212,7 +266,7 @@ function MorphleGame({ user }) {
                 className="difficulty-btn hard"
                 disabled={loading}
               >
-                <div className="difficulty-icon">🔥</div>
+                <div className="difficulty-icon">H</div>
                 <h3>Hard</h3>
                 <p>6 letters • $50 reward</p>
               </button>
@@ -221,12 +275,12 @@ function MorphleGame({ user }) {
             <div className="game-rules">
               <h3>How to Play:</h3>
               <ul>
-                <li>🔄 Transform the start word into the target word</li>
-                <li>📝 Change only one letter at a time</li>
-                <li>✅ Each step must be a valid English word</li>
-                <li>⏱️ Faster completion = time bonus!</li>
-                <li>💡 Use hints if you get stuck (for a cost)</li>
-                <li>🏆 Perfect runs get streak bonuses!</li>
+                <li>Transform the start word into the target word</li>
+                <li>Change only one letter at a time</li>
+                <li>Each step must be a valid English word</li>
+                <li>Faster completion = time bonus!</li>
+                <li>Use hints if you get stuck (for a cost)</li>
+                <li>Perfect runs get streak bonuses!</li>
               </ul>
             </div>
           </div>

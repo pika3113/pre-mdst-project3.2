@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/config';
 import { authUtils } from '../../services/authService';
-import './PracticeGame.css';
+import gameDebugManager from '../../utils/debugUtils';
+import './WordleGame.css';
 
 const MAX_GUESSES = 6;
 
-function PracticeGame({ user }) {
+function WordleGame({ user }) {
   const [difficulty, setDifficulty] = useState('medium');
   const [wordLength, setWordLength] = useState(5);
   const [grid, setGrid] = useState([]);
@@ -40,13 +41,15 @@ function PracticeGame({ user }) {
     setHasConnectionError(false);
     
     try {
-      const data = await apiCall(`/api/game/start`, {
+      const data = await apiCall(`/api/wordle/start`, {
         method: 'POST',
         body: JSON.stringify({ difficulty: newDifficulty }),
       });
 
       if (data === null) return; // Auth failure, user will be redirected
 
+      console.info(`Wordle: Started ${newDifficulty} game (${data.word_length} letters)`);
+      
       setSessionId(data.game_id);
       setWordLength(data.word_length);
       initializeGrids(data.word_length);
@@ -55,7 +58,7 @@ function PracticeGame({ user }) {
       setIsGameOver(false);
       setMessage('');
     } catch (error) {
-      console.error('Error starting new game:', error);
+      console.error('Wordle: Failed to start game', error);
       if (!hasConnectionError) {
         setMessage('Failed to start new game. Please try again.');
       }
@@ -69,7 +72,7 @@ function PracticeGame({ user }) {
     if (!sessionId) return;
 
     try {
-      const data = await apiCall(`/api/game/guess`, {
+      const data = await apiCall(`/api/wordle/guess`, {
         method: 'POST',
         body: JSON.stringify({
           game_id: sessionId,
@@ -100,7 +103,7 @@ function PracticeGame({ user }) {
         setCurrentCol(0);
       }
     } catch (error) {
-      console.error('Error submitting guess:', error);
+      console.error('Wordle: Guess submission failed', error);
       
       // Check if it's a validation error (400 status) with specific message
       if (error.message && error.message.includes('not a valid word')) {
@@ -160,9 +163,56 @@ function PracticeGame({ user }) {
     startNewGame();
   }, []);
 
+  // Console command to reveal answer (development only)
+  const revealAnswer = async () => {
+    // Temporarily removing dev check for testing
+    // if (!import.meta.env.DEV) {
+    //   console.warn('Debug commands are only available in development mode');
+    //   return;
+    // }
+
+    if (!sessionId) {
+      console.warn('Wordle Debug: No active game session');
+      return;
+    }
+
+    try {
+      const data = await apiCall(`/api/wordle/debug/answer/${sessionId}`);
+      if (data === null) return; // Auth failure
+
+      console.log('WORDLE ANSWER:', data.answer);
+      console.info('Game Info:', {
+        answer: data.answer,
+        gameId: data.game_id,
+        difficulty: data.difficulty,
+        wordLength: data.word_length,
+        guessesRemaining: MAX_GUESSES - currentRow
+      });
+      
+    } catch (error) {
+      console.error('Wordle Debug: Failed to retrieve answer', error);
+    }
+  };
+
+  // Set up debug console commands (development only)
+  useEffect(() => {
+    // Register with universal debug manager
+    if (sessionId) {
+      gameDebugManager.setActiveGame('wordle', { sessionId, difficulty });
+    }
+
+    // Set up debug commands (temporarily always enabled for testing)
+    window.revealWordleAnswer = revealAnswer;
+
+    return () => {
+      if (window.hasOwnProperty('revealWordleAnswer')) delete window.revealWordleAnswer;
+      if (!sessionId) gameDebugManager.clearActiveGame();
+    };
+  }, [sessionId]);
+
   if (hasConnectionError) {
     return (
-      <div className="practice-game error-state">
+      <div className="wordle-game error-state">
         <div className="error-content">
           <h2>Connection Error</h2>
           <p>Unable to connect to the game server. Please check your connection and try again.</p>
@@ -180,7 +230,7 @@ function PracticeGame({ user }) {
   }
 
   return (
-    <div className="practice-game">
+    <div className="wordle-game">
       <div className="game-header">
         <button 
           className="back-btn"
@@ -190,7 +240,7 @@ function PracticeGame({ user }) {
         </button>
         
         <div className="game-info">
-          <h1>Practice Mode</h1>
+          <h1>Wordle</h1>
           <div className="difficulty-selector">
             {['easy', 'medium', 'hard'].map(diff => (
               <button
@@ -253,7 +303,7 @@ function PracticeGame({ user }) {
             {isGameOver && (
               <div className="game-actions">
                 <button onClick={() => startNewGame()} className="new-game-btn">
-                  🎮 Play Again
+                  Play Again
                 </button>
                 <button onClick={() => {
                   // Set a flag to indicate legitimate navigation to stats
@@ -278,4 +328,4 @@ function PracticeGame({ user }) {
   );
 }
 
-export default PracticeGame;
+export default WordleGame;

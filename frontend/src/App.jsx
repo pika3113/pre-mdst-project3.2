@@ -5,11 +5,12 @@ import LandingPage from "./pages/LandingPage";
 import MenuScreen from "./pages/MenuScreen";
 import ProfileScreen from "./pages/ProfileScreen";
 import HistoryScreen from "./pages/HistoryScreen";
-import PracticeGame from "./components/game/PracticeGame";
+import WordleGame from "./components/game/WordleGame";
 import MultiplayerGame from "./components/game/MultiplayerGame";
 import HangmanGame from "./components/game/HangmanGame";
 import MorphleGame from "./components/game/MorphleGame";
 import RouletteGame from "./components/game/RouletteGame";
+import Balance from "./components/game/Balance";
 import GoogleCallback from "./components/auth/GoogleCallback";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
@@ -38,11 +39,12 @@ function AuthenticatedApp() {
         <Route path="/menu" element={<MenuScreen user={user} onLogout={handleLogout} />} />
         <Route path="/profile" element={<ProfileScreen user={user} onUserUpdate={handleUserUpdate} />} />
         <Route path="/profile/gamehistory" element={<HistoryScreen user={user} onLogout={handleLogout} />} />
-        <Route path="/wordle" element={<PracticeGame user={user} />} />
+        <Route path="/wordle" element={<WordleGame user={user} />} />
         <Route path="/multiplayer" element={<MultiplayerGame user={user} />} />
         <Route path="/hangle" element={<HangmanGame user={user} />} />
         <Route path="/morphle" element={<MorphleGame user={user} />} />
         <Route path="/roulette" element={<RouletteGame user={user} />} />
+        <Route path="/balance" element={<Balance user={user} />} />
         <Route path="*" element={<Navigate to="/menu" replace />} />
       </Routes>
     );

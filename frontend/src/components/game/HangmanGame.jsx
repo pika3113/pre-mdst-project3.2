@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/config';
 import { authUtils } from '../../services/authService';
+import gameDebugManager from '../../utils/debugUtils';
 import './HangmanGame.css';
 
 function HangmanGame({ user }) {
@@ -41,6 +42,8 @@ function HangmanGame({ user }) {
 
       if (data === null) return; // Auth failure, user will be redirected
 
+      console.info(`Hangman: Started ${newDifficulty} game (${data.word_length} letters)`);
+      
       setGameId(data.game_id);
       setDisplayWord(data.display_word);
       setRemainingGuesses(data.remaining_guesses);
@@ -56,7 +59,7 @@ function HangmanGame({ user }) {
       
       setIsLoading(false);
     } catch (error) {
-      console.error('Failed to start hangman game:', error);
+      console.error('Hangman: Failed to start game', error);
       setHasConnectionError(true);
       setMessage('Failed to start game. Please try again.');
       setIsLoading(false);
@@ -91,7 +94,7 @@ function HangmanGame({ user }) {
       }
       
     } catch (error) {
-      console.error('Failed to submit guess:', error);
+      console.error('Hangman: Letter guess failed', error);
       setMessage('Failed to submit guess. Please try again.');
     }
   };
@@ -125,7 +128,7 @@ function HangmanGame({ user }) {
       }
       
     } catch (error) {
-      console.error('Failed to submit word guess:', error);
+      console.error('Hangman: Word guess failed', error);
       setMessage('Failed to submit word guess. Please try again.');
     }
   };
@@ -153,7 +156,7 @@ function HangmanGame({ user }) {
       }
       
     } catch (error) {
-      console.error('Failed to get hint:', error);
+      console.error('Hangman: Hint request failed', error);
       setMessage('Failed to get hint. Please try again.');
     }
   };
@@ -187,6 +190,53 @@ function HangmanGame({ user }) {
       }
     }
   }, [isGameOver, showWordGuessInput, submitLetterGuess, submitWordGuess, guessedLetters]);
+
+  // Console command to reveal answer (development only)
+  const revealAnswer = async () => {
+    // Temporarily removing dev check for testing
+    // if (!import.meta.env.DEV) {
+    //   console.warn('Debug commands are only available in development mode');
+    //   return;
+    // }
+
+    if (!gameId) {
+      console.warn('Hangman Debug: No active game session');
+      return;
+    }
+
+    try {
+      const data = await apiCall(`/api/hangman/debug/answer/${gameId}`);
+      if (data === null) return; // Auth failure
+
+      console.log('HANGMAN ANSWER:', data.answer);
+      console.info('Game Info:', {
+        answer: data.answer,
+        gameId: data.game_id,
+        difficulty: data.difficulty,
+        wordLength: data.word_length,
+        remainingGuesses: data.remaining_guesses
+      });
+      
+    } catch (error) {
+      console.error('Hangman Debug: Failed to retrieve answer', error);
+    }
+  };
+
+  // Set up debug console commands
+  useEffect(() => {
+    // Register with universal debug manager
+    if (gameId) {
+      gameDebugManager.setActiveGame('hangman', { gameId, difficulty });
+    }
+
+    // Set up debug commands (temporarily always enabled for testing)
+    window.revealHangmanAnswer = revealAnswer;
+    
+    return () => {
+      if (window.hasOwnProperty('revealHangmanAnswer')) delete window.revealHangmanAnswer;
+      if (!gameId) gameDebugManager.clearActiveGame();
+    };
+  }, [gameId]);
 
   // Initialize game on component mount
   useEffect(() => {
@@ -239,7 +289,7 @@ function HangmanGame({ user }) {
   if (isLoading) {
     return (
       <div className="hangman-game loading">
-        <div className="loading-spinner">Loading Hangman Game...</div>
+        <div className="loading-spinner">Loading Hangle...</div>
       </div>
     );
   }
@@ -264,7 +314,7 @@ function HangmanGame({ user }) {
   return (
     <div className="hangman-game">
       <div className="game-header">
-        <h1>Hangman Game</h1>
+        <h1>Hangle</h1>
         <div className="user-info">
           Welcome, {user?.name || user?.username || 'Player'}!
         </div>
@@ -276,7 +326,7 @@ function HangmanGame({ user }) {
           <select 
             value={difficulty} 
             onChange={(e) => setDifficulty(e.target.value)}
-            disabled={!isGameOver}
+            //disabled={isGameOver}
           >
             <option value="easy">Easy (4-5 letters, 8 guesses)</option>
             <option value="medium">Medium (6-7 letters, 7 guesses)</option>

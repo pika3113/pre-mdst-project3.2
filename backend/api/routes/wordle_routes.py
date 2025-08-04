@@ -1,5 +1,5 @@
 """
-Game-related API routes
+Wordle game API routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict
@@ -17,7 +17,7 @@ from services.auth_service import AuthManager
 from services.balance_service import balance_service
 from core.database import db_manager
 
-router = APIRouter(prefix="/api/game", tags=["game"])
+router = APIRouter(prefix="/api/wordle", tags=["wordle"])
 
 # Initialize auth manager
 auth_manager = AuthManager(db_manager.db_path)

@@ -3,6 +3,7 @@ Roulette game service
 """
 import random
 from typing import List, Dict, Any
+from .balance_service import balance_service
 
 # Import the multiplier and wheel from models
 multiplier = {
@@ -37,16 +38,34 @@ class RouletteService:
         self.multiplier = multiplier
         self.wheel = wheel
     
-    def play_roulette(self, bets: List[List]) -> Dict[str, Any]:
+    def play_roulette(self, bets: List[List], user_id: int) -> Dict[str, Any]:
         """
         Play a round of roulette with given bets
         
         Args:
             bets: List of bets in format [bet_type, amount, ...numbers/color/evenodd]
+            user_id: ID of the user placing bets
             
         Returns:
             Dictionary with result information
         """
+        # Calculate total bet amount
+        total_bet_amount = sum(bet[1] for bet in bets)
+        
+        # Check if user has sufficient balance
+        user_balance_info = balance_service.get_user_balance(user_id)
+        if user_balance_info['balance'] < total_bet_amount:
+            raise ValueError("Insufficient balance")
+        
+        # Deduct bet amount from balance
+        balance_service.subtract_balance(
+            user_id, 
+            total_bet_amount, 
+            "roulette_bet", 
+            "roulette", 
+            f"Roulette bet: ${total_bet_amount}"
+        )
+        
         winnings = 0
         pocket = random.randint(0, 36)
         winning_bets = []
@@ -67,7 +86,7 @@ class RouletteService:
                         "type": bet_type,
                         "amount": bet_amount,
                         "payout": payout,
-                        "numbers": bet[2:]
+                        "selection": bet[2:]
                     })
                     is_winning_bet = True
             elif pocket != 0 and bet_type == "color":
@@ -79,7 +98,7 @@ class RouletteService:
                         "type": bet_type,
                         "amount": bet_amount,
                         "payout": payout,
-                        "color": bet[2]
+                        "selection": bet[2]
                     })
                     is_winning_bet = True
             elif pocket != 0 and bet_type == "evenodd":
@@ -102,13 +121,27 @@ class RouletteService:
                     "selection": bet[2:] if bet_type not in ["color", "evenodd"] else bet[2]
                 })
 
+        # Add winnings to user balance if any
+        if winnings > 0:
+            balance_service.add_balance(
+                user_id,
+                winnings,
+                "roulette_win",
+                "roulette",
+                f"Roulette winnings: ${winnings}"
+            )
+        
+        # Get updated balance
+        updated_balance = balance_service.get_user_balance(user_id)
+
         return {
             "pocket": pocket,
             "color": self.wheel[pocket],
             "total_winnings": winnings,
             "winning_bets": winning_bets,
             "losing_bets": losing_bets,
-            "net_result": winnings - sum(bet[1] for bet in bets)
+            "net_result": winnings - total_bet_amount,
+            "new_balance": updated_balance['balance']
         }
     
     def get_bet_types(self) -> Dict[str, Any]:
